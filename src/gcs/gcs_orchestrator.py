@@ -7,7 +7,7 @@ import fcntl
 from gcs_distiller import GCSDistiller
 
 class GCSOrchestrator:
-    def __init__(self, root_path, threshold=20000):
+    def __init__(self, root_path, threshold=200000):
         self.root_path = root_path
         self.threshold = threshold
         self.dot_gemini = os.path.join(root_path, ".gemini")

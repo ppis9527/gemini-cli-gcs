@@ -34,3 +34,6 @@
 - [ ] **Step 1: Enhance `gcs_init.sh` to verify `commit_sha` before restoration (Prevent Branch Poisoning)**
 - [ ] **Step 2: Add GCS activation instructions to the project's README/GEMINI.md**
 - [ ] **Step 3: Final End-to-End test: Switch branch -> Verify Reset -> Trigger 20k -> Verify Auto-Checkpoint**
+-e 
+
+#2026-04-04

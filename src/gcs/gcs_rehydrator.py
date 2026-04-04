@@ -1,50 +1,70 @@
 import os
 import json
+import threading
 
 class GCSRehydrator:
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls, checkpoint_path):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super(GCSRehydrator, cls).__new__(cls)
+                cls._instance._initialized = False
+            return cls._instance
+
     def __init__(self, checkpoint_path):
+        if self._initialized:
+            return
         self.checkpoint_path = checkpoint_path
         self.checkpoint = self._load_checkpoint()
+        self._initialized = True
 
     def _load_checkpoint(self):
         if os.path.exists(self.checkpoint_path):
-            with open(self.checkpoint_path, "r") as f:
-                return json.load(f)
+            try:
+                with open(self.checkpoint_path, "r") as f:
+                    return json.load(f)
+            except Exception:
+                return {}
         return {}
 
-    def get_source_map(self, file_path):
-        return self.checkpoint.get("source_maps", {}).get(file_path, [])
-
     def is_skeletonized(self, file_path):
-        return file_path in self.checkpoint.get("skeletons", {})
+        # Normalize to realpath for symlink safety
+        real_target = os.path.realpath(file_path)
+        rel_target = os.path.relpath(real_target, self.checkpoint.get("project_root", os.getcwd()))
+        return rel_target in self.checkpoint.get("skeletons", {})
 
     def rehydrate_block(self, file_path, symbol_name):
-        """
-        Returns the original source code block for a given symbol.
-        """
-        source_map = self.get_source_map(file_path)
+        real_path = os.path.realpath(file_path)
+        rel_path = os.path.relpath(real_path, self.checkpoint.get("project_root", os.getcwd()))
+        source_map = self.checkpoint.get("source_maps", {}).get(rel_path, [])
         metadata = next((m for m in source_map if m["symbol"] == symbol_name), None)
         
-        if not metadata or not os.path.exists(file_path):
+        if not metadata or not os.path.exists(real_path):
             return None
 
-        with open(file_path, "rb") as f:
-            f.seek(metadata["original_start"])
-            content = f.read(metadata["original_end"] - metadata["original_start"])
-            return content.decode("utf-8")
+        # Verify file size to detect drift
+        current_size = os.path.getsize(real_path)
+        if metadata.get("file_size_at_distill") and current_size != metadata["file_size_at_distill"]:
+            # Drift detected
+            return None
+
+        try:
+            with open(real_path, "rb") as f:
+                f.seek(metadata["original_start"])
+                content = f.read(metadata["original_end"] - metadata["original_start"])
+                # Safe decoding with replacement for non-UTF8
+                return content.decode("utf-8", errors="replace")
+        except (IOError, UnicodeDecodeError):
+            return None
 
     def rehydrate_full_file(self, file_path):
-        """
-        Simple restoration: returns the full original file from disk.
-        Since GCS doesn't delete original files, re-hydration is just 
-        returning the actual file content to replace the skeleton in context.
-        """
-        if os.path.exists(file_path):
-            with open(file_path, "r") as f:
-                return f.read()
+        real_path = os.path.realpath(file_path)
+        if os.path.exists(real_path):
+            try:
+                with open(real_path, "r", encoding="utf-8", errors="replace") as f:
+                    return f.read()
+            except Exception:
+                return None
         return None
-
-if __name__ == "__main__":
-    # Test placeholder
-    rehydrator = GCSRehydrator(".gemini/checkpoint.json")
-    print(f"Is Distiller skeletonized? {rehydrator.is_skeletonized('src/gcs/gcs_distiller.py')}")

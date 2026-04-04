@@ -16,8 +16,8 @@ class GCSIntercept:
         if not target_file:
             return
 
-        # Normalize path
-        abs_target = os.path.abspath(target_file)
+        # Use realpath for robust symlink handling
+        abs_target = os.path.realpath(target_file)
         rel_target = os.path.relpath(abs_target, self.root_path)
 
         if self.rehydrator.is_skeletonized(rel_target):

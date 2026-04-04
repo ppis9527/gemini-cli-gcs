@@ -107,7 +107,8 @@ class GCSDistiller:
                     "symbol": symbol_name,
                     "original_start": body_node.start_byte,
                     "original_end": body_node.end_byte,
-                    "type": node.type
+                    "type": node.type,
+                    "file_size_at_distill": len(source_code.encode("utf-8"))
                 })
                 if is_hot:
                     body_text = source_code.encode("utf-8")[body_node.start_byte:body_node.end_byte].decode("utf-8")

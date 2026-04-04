@@ -38,6 +38,7 @@ if [ -f "$CHECKPOINT" ]; then
     echo "<gcs_checkpoint_restore>"
     cat "$CHECKPOINT"
     echo "</gcs_checkpoint_restore>"
+    echo "<gcs_status>SUCCESS: Checkpoint Re-hydrated via SessionStart (clear)</gcs_status>"
     
     # 4. Success Log in GCS log
     LOG_PATH="$PROJECT_ROOT/.gemini/gcs.log"

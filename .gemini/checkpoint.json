@@ -1,16 +1,127 @@
 {
-  "gcs_version": "1.5",
-  "timestamp": "2026-04-04T10:15:00",
-  "project": "gemini-cli-gcs",
-  "status": "Task 2 (Skeletonization) partial implemented & verified",
-  "pending_work": [
-    "T2.1: Refine Skeletonizer to keep class structure while distilling method bodies",
-    "T3: Hysteresis Alignment Logic (4096-byte blocks + 64-byte slack)",
-    "T5: Develop sst_bench.py",
-    "T6: Safe SessionStart Hook"
-  ],
-  "env": {
-    "sandbox": "/Users/yj/gemini-cli/gcs-phase2-bench",
-    "venv_python": "/Users/yj/gemini-cli/gcs-phase2-bench/venv/bin/python3"
+  "gcs_version": "1.13",
+  "timestamp": 1775316521.5667,
+  "commit_sha": "eee806b793f43f4b525ee5b4ab02f0fa98ff8d6a",
+  "project_root": "/Users/yj/gemini-cli",
+  "skeletons": {
+    "COMMON_BUCKET_0": "<!-- GCS_BUCKET_MANIFEST_START: src/gcs/gcs_distiller.py, src/gcs/lsp_bridge.py -->\n\n--- GCS_FILE_START: src/gcs/gcs_distiller.py ---\n```py\nimport os\nimport sys\nimport tree_sitter\nimport tree_sitter_python\nimport tree_sitter_javascript\nimport tree_sitter_typescript\nfrom src.gcs.lsp_bridge import LSPBridge\n\nclass GCSDistiller:\n    def __init__(self, use_lsp=False, root_path=None):\n         pass\n\n    def skeletonize(self, file_path, source_code, skip_alignment=False):\n         pass\n\n    def pack_skeletons(self, file_content_map, block_size=4096, slack=64):\n         pass\n\n    def _apply_hysteresis(self, text, block_size=4096, slack=64):\n         pass\n\n    def _find_blocks_to_skeletonize(self, node, edits, ext, file_uri, source_code, source_map):\n         pass\n\n    def stop(self):\n         pass\n\nif __name__ == \"__main__\":\n    distiller = GCSDistiller()\n    if len(sys.argv) > 1:\n        with open(sys.argv[1], \"r\") as f:\n            print(distiller.skeletonize(sys.argv[1], f.read()))\n\n```\n--- GCS_FILE_END: src/gcs/gcs_distiller.py ---\n--- GCS_FILE_START: src/gcs/lsp_bridge.py ---\n```py\nimport os\nimport sys\nimport json\nimport time\nimport subprocess\nimport threading\nimport queue\n\nclass LSPBridge:\n    def __init__(self, root_uri, lsp_command, max_cache_size=1000):\n         pass\n\n    def start(self):\n         pass\n\n    def _listen(self):\n         pass\n\n    def _send(self, method, params=None):\n         pass\n\n    def initialize(self):\n         pass\n\n    def _wait_for_response(self, msg_id, timeout=0.2):\n         pass\n\n    def _evict_cache(self):\n         pass\n\n    def _ensure_process(self):\n         pass\n\n    def query_definition(self, file_uri, line, character):\n         pass\n\n    def stop(self):\n         pass\n\nif __name__ == \"__main__\":\n    bridge = LSPBridge(f\"file://{os.getcwd()}\", [\"venv/bin/pylsp\"])\n    bridge.start()\n    print(\"LSP Bridge Started.\")\n    time.sleep(1)\n    bridge.stop()\n\n```\n--- GCS_FILE_END: src/gcs/lsp_bridge.py ---\n<!-- GCS_BUCKET_MANIFEST_END -->\n<!-- GCS_HYSTERESIS_PADDING_2101 -->                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                "
+  },
+  "source_maps": {
+    "src/gcs/gcs_distiller.py": [
+      {
+        "symbol": "__init__",
+        "original_start": 251,
+        "original_end": 905,
+        "type": "function_definition",
+        "file_size_at_distill": 6561
+      },
+      {
+        "symbol": "skeletonize",
+        "original_start": 988,
+        "original_end": 1905,
+        "type": "function_definition",
+        "file_size_at_distill": 6561
+      },
+      {
+        "symbol": "pack_skeletons",
+        "original_start": 1990,
+        "original_end": 3225,
+        "type": "function_definition",
+        "file_size_at_distill": 6561
+      },
+      {
+        "symbol": "_apply_hysteresis",
+        "original_start": 3301,
+        "original_end": 3937,
+        "type": "function_definition",
+        "file_size_at_distill": 6561
+      },
+      {
+        "symbol": "_find_blocks_to_skeletonize",
+        "original_start": 4043,
+        "original_end": 6285,
+        "type": "function_definition",
+        "file_size_at_distill": 6561
+      },
+      {
+        "symbol": "stop",
+        "original_start": 6315,
+        "original_end": 6369,
+        "type": "function_definition",
+        "file_size_at_distill": 6561
+      }
+    ],
+    "src/gcs/lsp_bridge.py": [
+      {
+        "symbol": "__init__",
+        "original_start": 187,
+        "original_end": 492,
+        "type": "function_definition",
+        "file_size_at_distill": 4544
+      },
+      {
+        "symbol": "start",
+        "original_start": 523,
+        "original_end": 831,
+        "type": "function_definition",
+        "file_size_at_distill": 4544
+      },
+      {
+        "symbol": "_listen",
+        "original_start": 864,
+        "original_end": 1624,
+        "type": "function_definition",
+        "file_size_at_distill": 4544
+      },
+      {
+        "symbol": "_send",
+        "original_start": 1676,
+        "original_end": 2239,
+        "type": "function_definition",
+        "file_size_at_distill": 4544
+      },
+      {
+        "symbol": "initialize",
+        "original_start": 2275,
+        "original_end": 2481,
+        "type": "function_definition",
+        "file_size_at_distill": 4544
+      },
+      {
+        "symbol": "_wait_for_response",
+        "original_start": 2546,
+        "original_end": 2812,
+        "type": "function_definition",
+        "file_size_at_distill": 4544
+      },
+      {
+        "symbol": "_evict_cache",
+        "original_start": 2850,
+        "original_end": 3259,
+        "type": "function_definition",
+        "file_size_at_distill": 4544
+      },
+      {
+        "symbol": "_ensure_process",
+        "original_start": 3300,
+        "original_end": 3416,
+        "type": "function_definition",
+        "file_size_at_distill": 4544
+      },
+      {
+        "symbol": "query_definition",
+        "original_start": 3485,
+        "original_end": 4276,
+        "type": "function_definition",
+        "file_size_at_distill": 4544
+      },
+      {
+        "symbol": "stop",
+        "original_start": 4306,
+        "original_end": 4359,
+        "type": "function_definition",
+        "file_size_at_distill": 4544
+      }
+    ]
   }
 }
