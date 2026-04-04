@@ -35,17 +35,24 @@ class GCSOrchestrator:
             with open(self.checkpoint_path, "r") as f:
                 checkpoint = json.load(f)
             
-            orig_count = len(checkpoint.get("skeletons", {}))
-            # Rename Awareness: If file missing, check if content exists in another entry?
-            # For now, simple exist check + stale removal
-            checkpoint["skeletons"] = {k: v for k, v in checkpoint.get("skeletons", {}).items() 
-                                      if os.path.exists(k) or k.startswith("COMMON_BUCKET_")}
+            try:
+                current_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.root_path, text=True).strip()
+            except Exception:
+                current_sha = "no-git-repo"
+
+            # Branch-Aware Invalidation
+            if checkpoint.get("commit_sha") != current_sha:
+                self._log(f"Branch change detected ({checkpoint.get('commit_sha')} -> {current_sha}). Purging skeletons.")
+                checkpoint["skeletons"] = {}
+            else:
+                orig_count = len(checkpoint.get("skeletons", {}))
+                checkpoint["skeletons"] = {k: v for k, v in checkpoint.get("skeletons", {}).items() 
+                                          if os.path.exists(k) or k.startswith("COMMON_BUCKET_")}
+                if orig_count != len(checkpoint["skeletons"]):
+                    self._log(f"Cleaned up {orig_count - len(checkpoint['skeletons'])} stale entries.")
             
-            if orig_count != len(checkpoint["skeletons"]):
-                self._log(f"Cleaned up {orig_count - len(checkpoint['skeletons'])} stale entries.")
-                # We could implement fuzzy matching by content hash here in Phase 7
-                with open(self.checkpoint_path, "w") as f:
-                    json.dump(checkpoint, f, indent=2)
+            with open(self.checkpoint_path, "w") as f:
+                json.dump(checkpoint, f, indent=2)
         except Exception as e:
             self._log(f"Cleanup failed: {e}")
 
@@ -91,7 +98,7 @@ class GCSOrchestrator:
                 commit_sha = "no-git-repo"
 
             checkpoint = {
-                "gcs_version": "1.10",
+                "gcs_version": "1.12",
                 "timestamp": time.time(),
                 "commit_sha": commit_sha,
                 "project_root": self.root_path,

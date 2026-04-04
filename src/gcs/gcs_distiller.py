@@ -32,7 +32,6 @@ class GCSDistiller:
 
         edits = []
         file_uri = f"file://{os.path.abspath(file_path)}"
-        # Pass source_code into the walker to avoid Scope Error
         self._find_blocks_to_skeletonize(root, edits, ext, file_uri, source_code)
         
         source_bytes = bytearray(source_code.encode("utf-8"))
@@ -53,7 +52,11 @@ class GCSDistiller:
             return self._apply_hysteresis(manifest + content + footer, block_size, slack)
 
         for file_path, content in file_content_map.items():
-            entry = f"\n--- GCS_FILE_START: {file_path} ---\n{content}\n--- GCS_FILE_END: {file_path} ---"
+            _, ext = os.path.splitext(file_path)
+            lang = ext.lstrip(".")
+            # Enhanced Boundary: Markdown Block + START/END tags
+            entry = f"\n--- GCS_FILE_START: {file_path} ---\n```{lang}\n{content}\n```\n--- GCS_FILE_END: {file_path} ---"
+            
             if len((current_bucket_content + entry).encode("utf-8")) + 256 + slack > block_size:
                 if current_bucket_content:
                     buckets.append(finalize_bucket(current_bucket_content, current_bucket_files))
@@ -66,6 +69,20 @@ class GCSDistiller:
         if current_bucket_content:
             buckets.append(finalize_bucket(current_bucket_content, current_bucket_files))
         return buckets
+
+    def _apply_hysteresis(self, text, block_size=4096, slack=64):
+        size = len(text.encode("utf-8"))
+        aligned_size = ((size + slack + block_size - 1) // block_size) * block_size
+        padding_needed = aligned_size - size
+        comment_header = "<!-- GCS_HYSTERESIS_PADDING_"
+        comment_footer = " -->"
+        min_comment_len = len(f"\n{comment_header}{padding_needed}{comment_footer}".encode("utf-8"))
+        if padding_needed >= min_comment_len:
+            padding = f"\n{comment_header}{padding_needed}{comment_footer}"
+            padding += " " * (padding_needed - len(padding.encode("utf-8")))
+        else:
+            padding = " " * padding_needed
+        return text + padding
 
     def _find_blocks_to_skeletonize(self, node, edits, ext, file_uri, source_code):
         func_types = ("function_definition", "function_declaration", "method_definition", "arrow_function", "generator_function_declaration")
@@ -87,10 +104,9 @@ class GCSDistiller:
             
             if body_node:
                 if is_hot:
-                    # Adaptive Fidelity: Dynamic preservation based on tree structure (proxy for complexity)
-                    # For now, keep up to 10 lines for hot symbols
                     body_text = source_code.encode("utf-8")[body_node.start_byte:body_node.end_byte].decode("utf-8")
                     body_lines = body_text.splitlines()
+                    # Adaptive Fidelity: Dynamic preservation based on tree structure (max 10 lines)
                     preserved_count = min(len(body_lines), 10)
                     preserved_body = "\n".join(body_lines[:preserved_count]) + "\n        ... (semantic truncation)"
                     replacement = f" {preserved_body}"
@@ -100,51 +116,6 @@ class GCSDistiller:
                 return
         for child in node.children:
             self._find_blocks_to_skeletonize(child, edits, ext, file_uri, source_code)
-
-    def _apply_hysteresis(self, text, block_size=4096, slack=64):
-        size = len(text.encode("utf-8"))
-        aligned_size = ((size + slack + block_size - 1) // block_size) * block_size
-        padding_needed = aligned_size - size
-        comment_header = "<!-- GCS_HYSTERESIS_PADDING_"
-        comment_footer = " -->"
-        min_comment_len = len(f"\n{comment_header}{padding_needed}{comment_footer}".encode("utf-8"))
-        if padding_needed >= min_comment_len:
-            padding = f"\n{comment_header}{padding_needed}{comment_footer}"
-            padding += " " * (padding_needed - len(padding.encode("utf-8")))
-        else:
-            padding = " " * padding_needed
-        return text + padding
-
-    def _find_blocks_to_skeletonize(self, node, edits, ext, file_uri):
-        func_types = ("function_definition", "function_declaration", "method_definition", "arrow_function", "generator_function_declaration")
-        if node.type in func_types:
-            semantic_hint = ""
-            is_hot = False
-            if self.lsp_bridge:
-                res, tier, count = self.lsp_bridge.query_definition(file_uri, node.start_point[0], node.start_point[1])
-                if tier in ("L1", "L2") and res:
-                    is_hot = count > 5
-                    hot_tag = " [HOT_SYMBOL]" if is_hot else ""
-                    semantic_hint = f" # [SEMANTIC_{tier}]{hot_tag}"
-            
-            body_node = None
-            for child in node.children:
-                if child.type in ("block", "statement_block"):
-                    body_node = child
-                    break
-            
-            if body_node:
-                if is_hot:
-                    # Adaptive Fidelity: Keep first 3 lines of body
-                    body_lines = source_code.encode("utf-8")[body_node.start_byte:body_node.end_byte].decode("utf-8").splitlines()
-                    preserved_body = "\n".join(body_lines[:4]) + "\n        ... (rest distilled)"
-                    replacement = f" {preserved_body}"
-                else:
-                    replacement = f" pass{semantic_hint}" if ext == ".py" else f" ...{semantic_hint}"
-                edits.append((body_node.start_byte, body_node.end_byte, replacement))
-                return
-        for child in node.children:
-            self._find_blocks_to_skeletonize(child, edits, ext, file_uri)
 
     def stop(self):
         if self.lsp_bridge:

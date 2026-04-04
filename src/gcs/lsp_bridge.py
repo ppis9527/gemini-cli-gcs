@@ -96,8 +96,9 @@ class LSPBridge:
                     self.l1_cache.pop(k, None)
 
     def _ensure_process(self):
-        if self.process is None or self.process.poll() is not None:
-            self.start()
+        with self.lock:
+            if self.process is None or self.process.poll() is not None:
+                self.start()
 
     def query_definition(self, file_uri, line, character):
         self._ensure_process()
