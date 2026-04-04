@@ -7,14 +7,15 @@ import threading
 import queue
 
 class LSPBridge:
-    def __init__(self, root_uri, lsp_command):
+    def __init__(self, root_uri, lsp_command, max_cache_size=1000):
         self.root_uri = root_uri
         self.lsp_command = lsp_command
+        self.max_cache_size = max_cache_size
         self.process = None
         self.id_counter = 0
         self.responses = {}
         self.lock = threading.Lock()
-        self.l1_cache = {} # Symbol Cache
+        self.l1_cache = {} # Symbol Cache: {key: {"result": r, "count": c}}
 
     def start(self):
         self.process = subprocess.Popen(
@@ -33,16 +34,13 @@ class LSPBridge:
             if not line: break
             if line.startswith("Content-Length:"):
                 length = int(line.split(":")[1].strip())
-                # Read until we hit the double CRLF
                 while True:
                     next_line = self.process.stdout.readline()
                     if next_line == "\r\n" or next_line == "\n":
                         break
-                
                 body = self.process.stdout.read(length)
                 try:
                     resp = json.loads(body)
-                    # print(f"DEBUG LSP RECV: {resp.get('id')} {resp.get('method')}") # For manual debug
                     if "id" in resp:
                         with self.lock:
                             self.responses[resp["id"]] = resp
@@ -53,7 +51,6 @@ class LSPBridge:
         with self.lock:
             msg_id = self.id_counter
             self.id_counter += 1
-        
         payload = {
             "jsonrpc": "2.0",
             "id": msg_id,
@@ -62,8 +59,12 @@ class LSPBridge:
         }
         body = json.dumps(payload)
         msg = f"Content-Length: {len(body)}\r\n\r\n{body}"
-        self.process.stdin.write(msg)
-        self.process.stdin.flush()
+        if self.process and self.process.stdin:
+            try:
+                self.process.stdin.write(msg)
+                self.process.stdin.flush()
+            except BrokenPipeError:
+                pass
         return msg_id
 
     def initialize(self):
@@ -83,34 +84,48 @@ class LSPBridge:
             time.sleep(0.01)
         return None
 
+    def _evict_cache(self):
+        if len(self.l1_cache) > self.max_cache_size:
+            with self.lock:
+                items = list(self.l1_cache.items())
+            items.sort(key=lambda x: x[1]["count"])
+            evict_count = self.max_cache_size // 10
+            keys_to_remove = [x[0] for x in items[:evict_count]]
+            with self.lock:
+                for k in keys_to_remove:
+                    self.l1_cache.pop(k, None)
+
+    def _ensure_process(self):
+        if self.process is None or self.process.poll() is not None:
+            self.start()
+
     def query_definition(self, file_uri, line, character):
-        # Tier L1: Fast Cache
+        self._ensure_process()
         cache_key = f"{file_uri}:{line}:{character}"
         if cache_key in self.l1_cache:
-            return self.l1_cache[cache_key], "L1"
+            with self.lock:
+                self.l1_cache[cache_key]["count"] += 1
+                return self.l1_cache[cache_key]["result"], "L1", self.l1_cache[cache_key]["count"]
 
-        # Tier L2: LSP 200ms
         msg_id = self._send("textDocument/definition", {
             "textDocument": {"uri": file_uri},
             "position": {"line": line, "character": character}
         })
         resp = self._wait_for_response(msg_id, timeout=0.2)
         if resp and "result" in resp:
-            self.l1_cache[cache_key] = resp["result"]
-            return resp["result"], "L2"
-
-        # Tier L3: Fallback (None or Skeleton-only)
-        return None, "L3"
+            self._evict_cache()
+            with self.lock:
+                self.l1_cache[cache_key] = {"result": resp["result"], "count": 1}
+                return resp["result"], "L2", 1
+        return None, "L3", 0
 
     def stop(self):
         if self.process:
             self.process.terminate()
 
 if __name__ == "__main__":
-    # Test for Python pylsp
     bridge = LSPBridge(f"file://{os.getcwd()}", ["venv/bin/pylsp"])
     bridge.start()
     print("LSP Bridge Started.")
-    # Example definition query placeholder
     time.sleep(1)
     bridge.stop()
