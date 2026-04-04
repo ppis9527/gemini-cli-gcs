@@ -16,6 +16,28 @@ try {
 
   if (usage && usage.totalTokenCount) {
     const ratio = usage.totalTokenCount / MAX_CONTEXT;
+    const STATE_FILE = '.gemini/monitor_state.json';
+    let lastRatio = 0;
+
+    try {
+      if (fs.existsSync(STATE_FILE)) {
+        lastRatio = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8')).last_ratio || 0;
+      }
+    } catch (e) {}
+
+    // 每 5% (0.05) 觸發一次通知
+    if (Math.floor(ratio / 0.05) > Math.floor(lastRatio / 0.05)) {
+      const percent = (Math.floor(ratio / 0.05) * 5);
+      process.stderr.write(`
+📊 [GCS Context Monitor] 目前使用率已達 ${percent}% (${usage.totalTokenCount} tokens)
+`);
+      
+      try {
+        if (!fs.existsSync('.gemini')) fs.mkdirSync('.gemini');
+        fs.writeFileSync(STATE_FILE, JSON.stringify({ last_ratio: ratio }));
+      } catch (e) {}
+    }
+
     if (ratio >= THRESHOLD) {
       process.stderr.write(`
 🚨 [GCS] Context 達 20%！正在執行自動總結 (Summarizing)...

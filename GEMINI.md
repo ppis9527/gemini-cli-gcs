@@ -31,18 +31,11 @@ You MUST structure every outgoing prompt and your internal state according to th
 6. [EPHEMERAL_CONTEXT]: Live git diff, tool outputs (sanitized/paged), and current conversation.
 </gcs_layout_mandate>
 
-## 📊 Budget & Metrics Mandate
-At the end of EVERY <thought> block, you MUST report your current context health using the latest `/stats model` data:
-<gcs_metrics>
-- session_input: [Total Session Input]
-- cache_reads: [Total Session Cache Reads]
-- cache_hit_ratio: [cache_reads / (session_input + cache_reads) %]
-- session_total: [Total Tokens Used]
-- window_saturation: [session_total / 1000000]
-</gcs_metrics>
+## 📊 Context Governance Mandate
+Stop manual token usage reporting. Rely exclusively on system-level alerts from `token-monitor` (notified every 5% increment).
 
 ### ♻️ GCS Lifecycle Workflow (20% Threshold)
-1. **Detection**: When `window_saturation` >= 20% (200k), report current metrics and announce: "Summarizing current context...".
+1. **Detection**: When `token-monitor` alerts that context has reached **20% (200k)**, you MUST announce: "Summarizing current context...".
 2. **Pre-Clear Guidance**: After summarization, explicitly instruct the user: "Summarization complete. Please use `/clear` to re-hydrate skeletons via SessionStart."
 3. **Re-hydration Confirmation**: If `<gcs_status>` contains `SUCCESS`, you MUST start your next message with: "✅ Context re-hydrated from `checkpoint.json`. Skeletonized symbols are active in Layer 4."
 
