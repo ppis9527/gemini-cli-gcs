@@ -81,15 +81,31 @@ graph TD
 
 ## 4. 關鍵技術實作 (Key Implementation)
 
-### 4.1 全域 Hook 配置 (`extension.json`)
-- **部署規範**: 所有腳本路徑必須在安裝時動態替換為 **絕對路徑** (如 `~/.gemini/extensions/gcs-guardian/scripts/token_monitor.js`)。
+### 4.1 全域 Hook 配置 (`extension.json` / `hooks.json`)
+- **正式勾子名稱**: 根據系統規範，工具執行後的勾子應正名為 **`AfterTool`**。
+- **註冊結構**:
 ```json
 {
   "name": "gcs-guardian",
   "hooks": {
-    "sessionStart": "/absolute/path/to/gcs_init.sh",
-    "postToolCall": "/absolute/path/to/token_monitor.js",
-    "prePrompt": "/absolute/path/to/gcs_intercept.js"
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "/absolute/path/to/gcs_init.sh"
+      }
+    ],
+    "AfterTool": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "name": "token-monitor",
+            "type": "command",
+            "command": "/absolute/path/to/token_monitor.js"
+          }
+        ]
+      }
+    ]
   }
 }
 ```

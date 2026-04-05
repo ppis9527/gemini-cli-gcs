@@ -1,3 +1,18 @@
 {
-  "skills": {}
+  "skills": {},
+  "hooks": {
+    "AfterTool": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "name": "gcs-token-monitor",
+            "type": "command",
+            "command": "/Users/yj/gemini-cli/token-monitor-v35-proactive.js",
+            "description": "Monitor context token usage and alert every 5%"
+          }
+        ]
+      }
+    ]
+  }
 }
