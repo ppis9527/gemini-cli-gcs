@@ -1,12 +1,224 @@
 {
-  "gcs_version": "1.13",
-  "timestamp": 1775316521.5667,
-  "commit_sha": "eee806b793f43f4b525ee5b4ab02f0fa98ff8d6a",
   "project_root": "/Users/yj/gemini-cli",
   "skeletons": {
-    "COMMON_BUCKET_0": "<!-- GCS_BUCKET_MANIFEST_START: src/gcs/gcs_distiller.py, src/gcs/lsp_bridge.py -->\n\n--- GCS_FILE_START: src/gcs/gcs_distiller.py ---\n```py\nimport os\nimport sys\nimport tree_sitter\nimport tree_sitter_python\nimport tree_sitter_javascript\nimport tree_sitter_typescript\nfrom src.gcs.lsp_bridge import LSPBridge\n\nclass GCSDistiller:\n    def __init__(self, use_lsp=False, root_path=None):\n         pass\n\n    def skeletonize(self, file_path, source_code, skip_alignment=False):\n         pass\n\n    def pack_skeletons(self, file_content_map, block_size=4096, slack=64):\n         pass\n\n    def _apply_hysteresis(self, text, block_size=4096, slack=64):\n         pass\n\n    def _find_blocks_to_skeletonize(self, node, edits, ext, file_uri, source_code, source_map):\n         pass\n\n    def stop(self):\n         pass\n\nif __name__ == \"__main__\":\n    distiller = GCSDistiller()\n    if len(sys.argv) > 1:\n        with open(sys.argv[1], \"r\") as f:\n            print(distiller.skeletonize(sys.argv[1], f.read()))\n\n```\n--- GCS_FILE_END: src/gcs/gcs_distiller.py ---\n--- GCS_FILE_START: src/gcs/lsp_bridge.py ---\n```py\nimport os\nimport sys\nimport json\nimport time\nimport subprocess\nimport threading\nimport queue\n\nclass LSPBridge:\n    def __init__(self, root_uri, lsp_command, max_cache_size=1000):\n         pass\n\n    def start(self):\n         pass\n\n    def _listen(self):\n         pass\n\n    def _send(self, method, params=None):\n         pass\n\n    def initialize(self):\n         pass\n\n    def _wait_for_response(self, msg_id, timeout=0.2):\n         pass\n\n    def _evict_cache(self):\n         pass\n\n    def _ensure_process(self):\n         pass\n\n    def query_definition(self, file_uri, line, character):\n         pass\n\n    def stop(self):\n         pass\n\nif __name__ == \"__main__\":\n    bridge = LSPBridge(f\"file://{os.getcwd()}\", [\"venv/bin/pylsp\"])\n    bridge.start()\n    print(\"LSP Bridge Started.\")\n    time.sleep(1)\n    bridge.stop()\n\n```\n--- GCS_FILE_END: src/gcs/lsp_bridge.py ---\n<!-- GCS_BUCKET_MANIFEST_END -->\n<!-- GCS_HYSTERESIS_PADDING_2101 -->                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                "
+    "gcs-phase2-bench/gcs_distiller.py": "import os\nimport sys\nimport tree_sitter\nimport tree_sitter_python\nimport tree_sitter_javascript\nimport tree_sitter_typescript\nfrom src.gcs.lsp_bridge import LSPBridge\n\nclass GCSDistiller:\n    def __init__(self, use_lsp=False, root_path=None):\n         pass\n\n    def skeletonize(self, file_path, source_code):\n         pass\n\n    def _apply_hysteresis(self, text, block_size=4096, slack=64):\n        # Calculate size needed\n         pass\n\n    def _find_blocks_to_skeletonize(self, node, edits, ext, file_uri):\n        # Target node types for body replacement (including async/generator)\n         pass\n\n    def stop(self):\n         pass\n\nif __name__ == \"__main__\":\n    distiller = GCSDistiller()\n    if len(sys.argv) > 1:\n        with open(sys.argv[1], \"r\") as f:\n            print(distiller.skeletonize(sys.argv[1], f.read()))\n",
+    "gcs-phase2-bench/lib.py": "def shared_func():\n     pass\n",
+    "gcs-phase2-bench/lsp_test.py": "def my_func():  pass\nmy_func()\n",
+    "gcs-phase2-bench/main.py": "from lib import shared_func\nshared_func()\n",
+    "gcs-phase2-bench/medium.py": "def f():\n     pass\n",
+    "gcs-phase2-bench/semantic_test.py": "def my_semantic_func():\n     pass\n\nmy_semantic_func()\n",
+    "gcs-phase2-bench/src/gcs/lsp_bridge.py": "import os\nimport sys\nimport json\nimport time\nimport subprocess\nimport threading\nimport queue\n\nclass LSPBridge:\n    def __init__(self, root_uri, lsp_command):\n         pass\n\n    def start(self):\n         pass\n\n    def _listen(self):\n         pass\n\n    def _send(self, method, params=None):\n         pass\n\n    def initialize(self):\n         pass\n\n    def _wait_for_response(self, msg_id, timeout=0.2):\n         pass\n\n    def query_definition(self, file_uri, line, character):\n        # Tier L1: Fast Cache\n         pass\n\n    def stop(self):\n         pass\n\nif __name__ == \"__main__\":\n    # Test for Python pylsp\n    bridge = LSPBridge(f\"file://{os.getcwd()}\", [\"venv/bin/pylsp\"])\n    bridge.start()\n    print(\"LSP Bridge Started.\")\n    # Example definition query placeholder\n    time.sleep(1)\n    bridge.stop()\n",
+    "gcs-phase2-bench/sst_bench.py": "import time\nimport os\nimport sys\nfrom gcs_distiller import GCSDistiller\n\nclass SSTBench:\n    def __init__(self, distiller):\n         pass\n\n    def run_benchmark(self, file_path):\n         pass\n\nif __name__ == \"__main__\":\n    distiller = GCSDistiller()\n    bench = SSTBench(distiller)\n    if len(sys.argv) > 1:\n        for path in sys.argv[1:]:\n            if os.path.exists(path):\n                bench.run_benchmark(path)\n",
+    "gcs-phase2-bench/test.js": "class MyJSClass {\n    constructor()  ...\n    myJSMethod(y)  ...\n}\n    jsMethod_1(y) { return y + 1; }\n    jsMethod_2(y) { return y + 2; }\n    jsMethod_3(y) { return y + 3; }\n    jsMethod_4(y) { return y + 4; }\n    jsMethod_5(y) { return y + 5; }\n    jsMethod_6(y) { return y + 6; }\n    jsMethod_7(y) { return y + 7; }\n    jsMethod_8(y) { return y + 8; }\n    jsMethod_9(y) { return y + 9; }\n    jsMethod_10(y) { return y + 10; }\n    jsMethod_11(y) { return y + 11; }\n    jsMethod_12(y) { return y + 12; }\n    jsMethod_13(y) { return y + 13; }\n    jsMethod_14(y) { return y + 14; }\n    jsMethod_15(y) { return y + 15; }\n    jsMethod_16(y) { return y + 16; }\n    jsMethod_17(y) { return y + 17; }\n    jsMethod_18(y) { return y + 18; }\n    jsMethod_19(y) { return y + 19; }\n    jsMethod_20(y) { return y + 20; }\n    jsMethod_21(y) { return y + 21; }\n    jsMethod_22(y) { return y + 22; }\n    jsMethod_23(y) { return y + 23; }\n    jsMethod_24(y) { return y + 24; }\n    jsMethod_25(y) { return y + 25; }\n    jsMethod_26(y) { return y + 26; }\n    jsMethod_27(y) { return y + 27; }\n    jsMethod_28(y) { return y + 28; }\n    jsMethod_29(y) { return y + 29; }\n    jsMethod_30(y) { return y + 30; }\n    jsMethod_31(y) { return y + 31; }\n    jsMethod_32(y) { return y + 32; }\n    jsMethod_33(y) { return y + 33; }\n    jsMethod_34(y) { return y + 34; }\n    jsMethod_35(y) { return y + 35; }\n    jsMethod_36(y) { return y + 36; }\n    jsMethod_37(y) { return y + 37; }\n    jsMethod_38(y) { return y + 38; }\n    jsMethod_39(y) { return y + 39; }\n    jsMethod_40(y) { return y + 40; }\n    jsMethod_41(y) { return y + 41; }\n    jsMethod_42(y) { return y + 42; }\n    jsMethod_43(y) { return y + 43; }\n    jsMethod_44(y) { return y + 44; }\n    jsMethod_45(y) { return y + 45; }\n    jsMethod_46(y) { return y + 46; }\n    jsMethod_47(y) { return y + 47; }\n    jsMethod_48(y) { return y + 48; }\n    jsMethod_49(y) { return y + 49; }\n    jsMethod_50(y) { return y + 50; }\n    jsMethod_51(y) { return y + 51; }\n    jsMethod_52(y) { return y + 52; }\n    jsMethod_53(y) { return y + 53; }\n    jsMethod_54(y) { return y + 54; }\n    jsMethod_55(y) { return y + 55; }\n    jsMethod_56(y) { return y + 56; }\n    jsMethod_57(y) { return y + 57; }\n    jsMethod_58(y) { return y + 58; }\n    jsMethod_59(y) { return y + 59; }\n    jsMethod_60(y) { return y + 60; }\n    jsMethod_61(y) { return y + 61; }\n    jsMethod_62(y) { return y + 62; }\n    jsMethod_63(y) { return y + 63; }\n    jsMethod_64(y) { return y + 64; }\n    jsMethod_65(y) { return y + 65; }\n    jsMethod_66(y) { return y + 66; }\n    jsMethod_67(y) { return y + 67; }\n    jsMethod_68(y) { return y + 68; }\n    jsMethod_69(y) { return y + 69; }\n    jsMethod_70(y) { return y + 70; }\n    jsMethod_71(y) { return y + 71; }\n    jsMethod_72(y) { return y + 72; }\n    jsMethod_73(y) { return y + 73; }\n    jsMethod_74(y) { return y + 74; }\n    jsMethod_75(y) { return y + 75; }\n    jsMethod_76(y) { return y + 76; }\n    jsMethod_77(y) { return y + 77; }\n    jsMethod_78(y) { return y + 78; }\n    jsMethod_79(y) { return y + 79; }\n    jsMethod_80(y) { return y + 80; }\n    jsMethod_81(y) { return y + 81; }\n    jsMethod_82(y) { return y + 82; }\n    jsMethod_83(y) { return y + 83; }\n    jsMethod_84(y) { return y + 84; }\n    jsMethod_85(y) { return y + 85; }\n    jsMethod_86(y) { return y + 86; }\n    jsMethod_87(y) { return y + 87; }\n    jsMethod_88(y) { return y + 88; }\n    jsMethod_89(y) { return y + 89; }\n    jsMethod_90(y) { return y + 90; }\n    jsMethod_91(y) { return y + 91; }\n    jsMethod_92(y) { return y + 92; }\n    jsMethod_93(y) { return y + 93; }\n    jsMethod_94(y) { return y + 94; }\n    jsMethod_95(y) { return y + 95; }\n    jsMethod_96(y) { return y + 96; }\n    jsMethod_97(y) { return y + 97; }\n    jsMethod_98(y) { return y + 98; }\n    jsMethod_99(y) { return y + 99; }\n    jsMethod_100(y) { return y + 100; }\n    jsMethod_101(y) { return y + 101; }\n    jsMethod_102(y) { return y + 102; }\n    jsMethod_103(y) { return y + 103; }\n    jsMethod_104(y) { return y + 104; }\n    jsMethod_105(y) { return y + 105; }\n    jsMethod_106(y) { return y + 106; }\n    jsMethod_107(y) { return y + 107; }\n    jsMethod_108(y) { return y + 108; }\n    jsMethod_109(y) { return y + 109; }\n    jsMethod_110(y) { return y + 110; }\n    jsMethod_111(y) { return y + 111; }\n    jsMethod_112(y) { return y + 112; }\n    jsMethod_113(y) { return y + 113; }\n    jsMethod_114(y) { return y + 114; }\n    jsMethod_115(y) { return y + 115; }\n    jsMethod_116(y) { return y + 116; }\n    jsMethod_117(y) { return y + 117; }\n    jsMethod_118(y) { return y + 118; }\n    jsMethod_119(y) { return y + 119; }\n    jsMethod_120(y) { return y + 120; }\n    jsMethod_121(y) { return y + 121; }\n    jsMethod_122(y) { return y + 122; }\n    jsMethod_123(y) { return y + 123; }\n    jsMethod_124(y) { return y + 124; }\n    jsMethod_125(y) { return y + 125; }\n    jsMethod_126(y) { return y + 126; }\n    jsMethod_127(y) { return y + 127; }\n    jsMethod_128(y) { return y + 128; }\n    jsMethod_129(y) { return y + 129; }\n    jsMethod_130(y) { return y + 130; }\n    jsMethod_131(y) { return y + 131; }\n    jsMethod_132(y) { return y + 132; }\n    jsMethod_133(y) { return y + 133; }\n    jsMethod_134(y) { return y + 134; }\n    jsMethod_135(y) { return y + 135; }\n    jsMethod_136(y) { return y + 136; }\n    jsMethod_137(y) { return y + 137; }\n    jsMethod_138(y) { return y + 138; }\n    jsMethod_139(y) { return y + 139; }\n    jsMethod_140(y) { return y + 140; }\n    jsMethod_141(y) { return y + 141; }\n    jsMethod_142(y) { return y + 142; }\n    jsMethod_143(y) { return y + 143; }\n    jsMethod_144(y) { return y + 144; }\n    jsMethod_145(y) { return y + 145; }\n    jsMethod_146(y) { return y + 146; }\n    jsMethod_147(y) { return y + 147; }\n    jsMethod_148(y) { return y + 148; }\n    jsMethod_149(y) { return y + 149; }\n    jsMethod_150(y) { return y + 150; }\n    jsMethod_151(y) { return y + 151; }\n    jsMethod_152(y) { return y + 152; }\n    jsMethod_153(y) { return y + 153; }\n    jsMethod_154(y) { return y + 154; }\n    jsMethod_155(y) { return y + 155; }\n    jsMethod_156(y) { return y + 156; }\n    jsMethod_157(y) { return y + 157; }\n    jsMethod_158(y) { return y + 158; }\n    jsMethod_159(y) { return y + 159; }\n    jsMethod_160(y) { return y + 160; }\n    jsMethod_161(y) { return y + 161; }\n    jsMethod_162(y) { return y + 162; }\n    jsMethod_163(y) { return y + 163; }\n    jsMethod_164(y) { return y + 164; }\n    jsMethod_165(y) { return y + 165; }\n    jsMethod_166(y) { return y + 166; }\n    jsMethod_167(y) { return y + 167; }\n    jsMethod_168(y) { return y + 168; }\n    jsMethod_169(y) { return y + 169; }\n    jsMethod_170(y) { return y + 170; }\n    jsMethod_171(y) { return y + 171; }\n    jsMethod_172(y) { return y + 172; }\n    jsMethod_173(y) { return y + 173; }\n    jsMethod_174(y) { return y + 174; }\n    jsMethod_175(y) { return y + 175; }\n    jsMethod_176(y) { return y + 176; }\n    jsMethod_177(y) { return y + 177; }\n    jsMethod_178(y) { return y + 178; }\n    jsMethod_179(y) { return y + 179; }\n    jsMethod_180(y) { return y + 180; }\n    jsMethod_181(y) { return y + 181; }\n    jsMethod_182(y) { return y + 182; }\n    jsMethod_183(y) { return y + 183; }\n    jsMethod_184(y) { return y + 184; }\n    jsMethod_185(y) { return y + 185; }\n    jsMethod_186(y) { return y + 186; }\n    jsMethod_187(y) { return y + 187; }\n    jsMethod_188(y) { return y + 188; }\n    jsMethod_189(y) { return y + 189; }\n    jsMethod_190(y) { return y + 190; }\n    jsMethod_191(y) { return y + 191; }\n    jsMethod_192(y) { return y + 192; }\n    jsMethod_193(y) { return y + 193; }\n    jsMethod_194(y) { return y + 194; }\n    jsMethod_195(y) { return y + 195; }\n    jsMethod_196(y) { return y + 196; }\n    jsMethod_197(y) { return y + 197; }\n    jsMethod_198(y) { return y + 198; }\n    jsMethod_199(y) { return y + 199; }\n    jsMethod_200(y) { return y + 200; }\n",
+    "gcs-phase2-bench/test.py": "class BigClass:\n    def big_method_1(self):\n        print('some long string to fill space 1')\n        print('some long string to fill space 2')\n        print('some long string to fill space 3')\n        print('some long string to fill space 4')\n        print('some long string to fill space 5')\n        print('some long string to fill space 6')\n        print('some long string to fill space 7')\n        print('some long string to fill space 8')\n        print('some long string to fill space 9')\n        print('some long string to fill space 10')\n        print('some long string to fill space 11')\n        print('some long string to fill space 12')\n        print('some long string to fill space 13')\n        print('some long string to fill space 14')\n        print('some long string to fill space 15')\n        print('some long string to fill space 16')\n        print('some long string to fill space 17')\n        print('some long string to fill space 18')\n        print('some long string to fill space 19')\n        print('some long string to fill space 20')\n    def big_method_2(self):\n        print('some long string to fill space 1')\n        print('some long string to fill space 2')\n... (GCS Circuit Breaker: Truncated)",
+    "gcs-phase2-bench/tiny.py": "def tiny_function():\n     pass\n",
+    "query_topic.py": "import sqlite3, json, sys, os, subprocess, argparse\nfrom pathlib import Path\nfrom datetime import datetime, timedelta\nfrom dotenv import load_dotenv\n\nSCRAPER_BASE = Path(os.getcwd())\nload_dotenv(SCRAPER_BASE / \".env\")\nDB_PATH = SCRAPER_BASE / \"tweets.db\"\n\ndef search_tweets(account, topic, days):\n     pass\n\ndef analyze_topic_weighted(topic, tweets):\n     pass\n\ndef main():\n     pass\n\nif __name__ == \"__main__\": main()\n",
+    "src/gcs/gcs_distiller.py": "import os\nimport sys\nimport tree_sitter\nimport tree_sitter_python\nimport tree_sitter_javascript\nimport tree_sitter_typescript\nfrom src.gcs.lsp_bridge import LSPBridge\n\nclass GCSDistiller:\n    def __init__(self, use_lsp=False, root_path=None):\n         pass\n\n    def skeletonize(self, file_path, source_code, skip_alignment=False):\n         pass\n\n    def pack_skeletons(self, file_content_map, block_size=4096, slack=64):\n         pass\n\n    def _apply_hysteresis(self, text, block_size=4096, slack=64):\n         pass\n\n    def _find_blocks_to_skeletonize(self, node, edits, ext, file_uri, source_code, source_map):\n         pass\n\n    def stop(self):\n         pass\n\nif __name__ == \"__main__\":\n    distiller = GCSDistiller()\n    if len(sys.argv) > 1:\n        with open(sys.argv[1], \"r\") as f:\n            print(distiller.skeletonize(sys.argv[1], f.read()))\n",
+    "src/gcs/gcs_health_report.py": "import os\nimport sys\nimport subprocess\nimport json\nfrom datetime import datetime\nfrom gcs_distiller import GCSDistiller\n\nclass GCSHealthReport:\n    def __init__(self, root_path):\n         pass\n\n    def scan_repo(self):\n         pass\n\n    def _process_file(self, abs_path, rel_path):\n         pass\n\n    def generate_report(self, output_path):\n         pass\n\nif __name__ == \"__main__\":\n    reporter = GCSHealthReport(os.getcwd())\n    reporter.scan_repo()\n    reporter.generate_report(\"docs/gcs/health_report_2026-04-04.md\")\n",
+    "src/gcs/gcs_intercept.py": "import os\nimport sys\nfrom gcs_rehydrator import GCSRehydrator\n\nclass GCSIntercept:\n    def __init__(self, root_path):\n         pass\n\n    def pre_tool_hook(self, tool_name, args):\n         pass\n\nif __name__ == \"__main__\":\n    intercept = GCSIntercept(os.getcwd())\n    # Test simulation\n    intercept.pre_tool_hook(\"read_file\", {\"file_path\": \"src/gcs/gcs_distiller.py\"})\n",
+    "src/gcs/gcs_orchestrator.py": "import os\nimport sys\nimport json\nimport time\nimport subprocess\nimport fcntl\nfrom gcs_distiller import GCSDistiller\n\nclass GCSOrchestrator:\n    def __init__(self, root_path, threshold=200000):\n         pass\n\n    def _log(self, message):\n         pass\n\n    def should_distill(self, current_tokens):\n         pass\n\n    def cleanup_stale_entries(self):\n         pass\n\n    def run_distillation(self, active_files):\n         pass\n\nif __name__ == \"__main__\":\n    if len(sys.argv) > 1:\n        tokens = int(sys.argv[1])\n        orchestrator = GCSOrchestrator(os.getcwd())\n        if orchestrator.should_distill(tokens):\n            orchestrator.run_distillation([\"src/gcs/gcs_distiller.py\", \"src/gcs/lsp_bridge.py\"])\n",
+    "src/gcs/gcs_rehydrator.py": "import os\nimport json\nimport threading\n\nclass GCSRehydrator:\n    _instance = None\n    _lock = threading.Lock()\n\n    def __new__(cls, checkpoint_path):\n         pass\n\n    def __init__(self, checkpoint_path):\n         pass\n\n    def _load_checkpoint(self):\n         pass\n\n    def is_skeletonized(self, file_path):\n        # Normalize to realpath for symlink safety\n         pass\n\n    def rehydrate_block(self, file_path, symbol_name):\n         pass\n\n    def rehydrate_full_file(self, file_path):\n         pass\n",
+    "src/gcs/lsp_bridge.py": "import os\nimport sys\nimport json\nimport time\nimport subprocess\nimport threading\nimport queue\n\nclass LSPBridge:\n    def __init__(self, root_uri, lsp_command, max_cache_size=1000):\n         pass\n\n    def start(self):\n         pass\n\n    def _listen(self):\n         pass\n\n    def _send(self, method, params=None):\n         pass\n\n    def initialize(self):\n         pass\n\n    def _wait_for_response(self, msg_id, timeout=0.2):\n         pass\n\n    def _evict_cache(self):\n         pass\n\n    def _ensure_process(self):\n         pass\n\n    def query_definition(self, file_uri, line, character):\n         pass\n\n    def stop(self):\n         pass\n\nif __name__ == \"__main__\":\n    bridge = LSPBridge(f\"file://{os.getcwd()}\", [\"venv/bin/pylsp\"])\n    bridge.start()\n    print(\"LSP Bridge Started.\")\n    time.sleep(1)\n    bridge.stop()\n",
+    "src/gcs/sst_bench.py": "import time\nimport os\nimport sys\nfrom gcs_distiller import GCSDistiller\n\nclass SSTBench:\n    def __init__(self, distiller):\n         pass\n\n    def run_benchmark(self, file_path):\n         pass\n\nif __name__ == \"__main__\":\n    distiller = GCSDistiller()\n    bench = SSTBench(distiller)\n    if len(sys.argv) > 1:\n        for path in sys.argv[1:]:\n            if os.path.exists(path):\n                bench.run_benchmark(path)\n"
   },
   "source_maps": {
+    "gcs-phase2-bench/gcs_distiller.py": [
+      {
+        "symbol": "__init__",
+        "original_start": 251,
+        "original_end": 905,
+        "type": "function_definition",
+        "file_size_at_distill": 4303
+      },
+      {
+        "symbol": "skeletonize",
+        "original_start": 966,
+        "original_end": 1706,
+        "type": "function_definition",
+        "file_size_at_distill": 4303
+      },
+      {
+        "symbol": "_apply_hysteresis",
+        "original_start": 1814,
+        "original_end": 2653,
+        "type": "function_definition",
+        "file_size_at_distill": 4303
+      },
+      {
+        "symbol": "_find_blocks_to_skeletonize",
+        "original_start": 2811,
+        "original_end": 4027,
+        "type": "function_definition",
+        "file_size_at_distill": 4303
+      },
+      {
+        "symbol": "stop",
+        "original_start": 4057,
+        "original_end": 4111,
+        "type": "function_definition",
+        "file_size_at_distill": 4303
+      }
+    ],
+    "gcs-phase2-bench/lib.py": [
+      {
+        "symbol": "shared_func",
+        "original_start": 23,
+        "original_end": 43,
+        "type": "function_definition",
+        "file_size_at_distill": 44
+      }
+    ],
+    "gcs-phase2-bench/lsp_test.py": [
+      {
+        "symbol": "my_func",
+        "original_start": 15,
+        "original_end": 19,
+        "type": "function_definition",
+        "file_size_at_distill": 30
+      }
+    ],
+    "gcs-phase2-bench/main.py": [],
+    "gcs-phase2-bench/medium.py": [
+      {
+        "symbol": "f",
+        "original_start": 13,
+        "original_end": 7400,
+        "type": "function_definition",
+        "file_size_at_distill": 7401
+      }
+    ],
+    "gcs-phase2-bench/semantic_test.py": [
+      {
+        "symbol": "my_semantic_func",
+        "original_start": 28,
+        "original_end": 37,
+        "type": "function_definition",
+        "file_size_at_distill": 58
+      }
+    ],
+    "gcs-phase2-bench/src/gcs/lsp_bridge.py": [
+      {
+        "symbol": "__init__",
+        "original_start": 166,
+        "original_end": 392,
+        "type": "function_definition",
+        "file_size_at_distill": 3807
+      },
+      {
+        "symbol": "start",
+        "original_start": 423,
+        "original_end": 731,
+        "type": "function_definition",
+        "file_size_at_distill": 3807
+      },
+      {
+        "symbol": "_listen",
+        "original_start": 764,
+        "original_end": 1698,
+        "type": "function_definition",
+        "file_size_at_distill": 3807
+      },
+      {
+        "symbol": "_send",
+        "original_start": 1750,
+        "original_end": 2184,
+        "type": "function_definition",
+        "file_size_at_distill": 3807
+      },
+      {
+        "symbol": "initialize",
+        "original_start": 2220,
+        "original_end": 2426,
+        "type": "function_definition",
+        "file_size_at_distill": 3807
+      },
+      {
+        "symbol": "_wait_for_response",
+        "original_start": 2491,
+        "original_end": 2757,
+        "type": "function_definition",
+        "file_size_at_distill": 3807
+      },
+      {
+        "symbol": "query_definition",
+        "original_start": 2856,
+        "original_end": 3468,
+        "type": "function_definition",
+        "file_size_at_distill": 3807
+      },
+      {
+        "symbol": "stop",
+        "original_start": 3498,
+        "original_end": 3551,
+        "type": "function_definition",
+        "file_size_at_distill": 3807
+      }
+    ],
+    "gcs-phase2-bench/sst_bench.py": [
+      {
+        "symbol": "__init__",
+        "original_start": 132,
+        "original_end": 158,
+        "type": "function_definition",
+        "file_size_at_distill": 1328
+      },
+      {
+        "symbol": "run_benchmark",
+        "original_start": 208,
+        "original_end": 1097,
+        "type": "function_definition",
+        "file_size_at_distill": 1328
+      }
+    ],
+    "gcs-phase2-bench/test.js": [
+      {
+        "symbol": "constructor",
+        "original_start": 36,
+        "original_end": 63,
+        "type": "method_definition",
+        "file_size_at_distill": 7898
+      },
+      {
+        "symbol": "myJSMethod",
+        "original_start": 82,
+        "original_end": 111,
+        "type": "method_definition",
+        "file_size_at_distill": 7898
+      }
+    ],
+    "gcs-phase2-bench/test.py": [],
+    "gcs-phase2-bench/tiny.py": [
+      {
+        "symbol": "tiny_function",
+        "original_start": 25,
+        "original_end": 90,
+        "type": "function_definition",
+        "file_size_at_distill": 91
+      }
+    ],
+    "query_topic.py": [
+      {
+        "symbol": "search_tweets",
+        "original_start": 301,
+        "original_end": 646,
+        "type": "function_definition",
+        "file_size_at_distill": 2035
+      },
+      {
+        "symbol": "analyze_topic_weighted",
+        "original_start": 695,
+        "original_end": 1350,
+        "type": "function_definition",
+        "file_size_at_distill": 2035
+      },
+      {
+        "symbol": "main",
+        "original_start": 1368,
+        "original_end": 2151,
+        "type": "function_definition",
+        "file_size_at_distill": 2035
+      }
+    ],
     "src/gcs/gcs_distiller.py": [
       {
         "symbol": "__init__",
@@ -49,6 +261,133 @@
         "original_end": 6369,
         "type": "function_definition",
         "file_size_at_distill": 6561
+      }
+    ],
+    "src/gcs/gcs_health_report.py": [
+      {
+        "symbol": "__init__",
+        "original_start": 187,
+        "original_end": 279,
+        "type": "function_definition",
+        "file_size_at_distill": 3807
+      },
+      {
+        "symbol": "scan_repo",
+        "original_start": 314,
+        "original_end": 1503,
+        "type": "function_definition",
+        "file_size_at_distill": 3807
+      },
+      {
+        "symbol": "_process_file",
+        "original_start": 1562,
+        "original_end": 2140,
+        "type": "function_definition",
+        "file_size_at_distill": 3807
+      },
+      {
+        "symbol": "generate_report",
+        "original_start": 2194,
+        "original_end": 3640,
+        "type": "function_definition",
+        "file_size_at_distill": 3807
+      }
+    ],
+    "src/gcs/gcs_intercept.py": [
+      {
+        "symbol": "__init__",
+        "original_start": 126,
+        "original_end": 299,
+        "type": "function_definition",
+        "file_size_at_distill": 1403
+      },
+      {
+        "symbol": "pre_tool_hook",
+        "original_start": 355,
+        "original_end": 1226,
+        "type": "function_definition",
+        "file_size_at_distill": 1403
+      }
+    ],
+    "src/gcs/gcs_orchestrator.py": [
+      {
+        "symbol": "__init__",
+        "original_start": 200,
+        "original_end": 586,
+        "type": "function_definition",
+        "file_size_at_distill": 5083
+      },
+      {
+        "symbol": "_log",
+        "original_start": 625,
+        "original_end": 929,
+        "type": "function_definition",
+        "file_size_at_distill": 5083
+      },
+      {
+        "symbol": "should_distill",
+        "original_start": 985,
+        "original_end": 1024,
+        "type": "function_definition",
+        "file_size_at_distill": 5083
+      },
+      {
+        "symbol": "cleanup_stale_entries",
+        "original_start": 1071,
+        "original_end": 2244,
+        "type": "function_definition",
+        "file_size_at_distill": 5083
+      },
+      {
+        "symbol": "run_distillation",
+        "original_start": 2300,
+        "original_end": 4797,
+        "type": "function_definition",
+        "file_size_at_distill": 5083
+      }
+    ],
+    "src/gcs/gcs_rehydrator.py": [
+      {
+        "symbol": "__new__",
+        "original_start": 159,
+        "original_end": 367,
+        "type": "function_definition",
+        "file_size_at_distill": 2617
+      },
+      {
+        "symbol": "__init__",
+        "original_start": 418,
+        "original_end": 588,
+        "type": "function_definition",
+        "file_size_at_distill": 2617
+      },
+      {
+        "symbol": "_load_checkpoint",
+        "original_start": 630,
+        "original_end": 860,
+        "type": "function_definition",
+        "file_size_at_distill": 2617
+      },
+      {
+        "symbol": "is_skeletonized",
+        "original_start": 963,
+        "original_end": 1170,
+        "type": "function_definition",
+        "file_size_at_distill": 2617
+      },
+      {
+        "symbol": "rehydrate_block",
+        "original_start": 1235,
+        "original_end": 2268,
+        "type": "function_definition",
+        "file_size_at_distill": 2617
+      },
+      {
+        "symbol": "rehydrate_full_file",
+        "original_start": 2324,
+        "original_end": 2616,
+        "type": "function_definition",
+        "file_size_at_distill": 2617
       }
     ],
     "src/gcs/lsp_bridge.py": [
@@ -122,6 +461,46 @@
         "type": "function_definition",
         "file_size_at_distill": 4544
       }
+    ],
+    "src/gcs/sst_bench.py": [
+      {
+        "symbol": "__init__",
+        "original_start": 132,
+        "original_end": 158,
+        "type": "function_definition",
+        "file_size_at_distill": 1328
+      },
+      {
+        "symbol": "run_benchmark",
+        "original_start": 208,
+        "original_end": 1097,
+        "type": "function_definition",
+        "file_size_at_distill": 1328
+      }
     ]
-  }
+  },
+  "bim_index": [
+    "gcs-phase2-bench/gcs_distiller.py",
+    "gcs-phase2-bench/lib.py",
+    "gcs-phase2-bench/lsp_test.py",
+    "gcs-phase2-bench/main.py",
+    "gcs-phase2-bench/medium.py",
+    "gcs-phase2-bench/semantic_test.py",
+    "gcs-phase2-bench/src/gcs/lsp_bridge.py",
+    "gcs-phase2-bench/sst_bench.py",
+    "gcs-phase2-bench/test.js",
+    "gcs-phase2-bench/test.py",
+    "gcs-phase2-bench/tiny.py",
+    "query_topic.py",
+    "src/gcs/gcs_distiller.py",
+    "src/gcs/gcs_health_report.py",
+    "src/gcs/gcs_intercept.py",
+    "src/gcs/gcs_orchestrator.py",
+    "src/gcs/gcs_rehydrator.py",
+    "src/gcs/lsp_bridge.py",
+    "src/gcs/sst_bench.py"
+  ],
+  "gcs_version": "1.20",
+  "timestamp": 1775450199.9262662,
+  "commit_sha": "e11a1d27884fa70e424c5eeb57831a28100ed176"
 }
