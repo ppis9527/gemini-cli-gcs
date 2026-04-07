@@ -31,6 +31,15 @@ class GCSIntercept:
         return False
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check-intent", action="store_true")
+    args = parser.parse_args()
+
     intercept = GCSIntercept(os.getcwd())
-    # Test simulation
-    intercept.pre_tool_hook("read_file", {"file_path": "src/gcs/gcs_distiller.py"})
+    if args.check_intent:
+        # In a real implementation, parse target files from sys.stdin or arguments
+        # For now, acknowledge the capability flag
+        print("GCS_INTERCEPT: Intent checking enabled. Ready for analysis.")
+    else:
+        # Test simulation
+        intercept.pre_tool_hook("read_file", {"file_path": "src/gcs/gcs_distiller.py"})

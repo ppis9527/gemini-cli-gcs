@@ -45,8 +45,15 @@ module.exports = async function(context) {
     const limit = context.max_tokens || 2000000; // Fallback to 2M if max_tokens is undefined
     const saturation = (current_tokens / limit) * 100;
 
-    // Display notification for every 5% increment (e.g., 5%, 10%, 15%...)
-    if (Math.floor(saturation) % 5 === 0 && Math.floor(saturation) > 0) {
+    // Ensure we only notify ONCE per 5% bucket
+    const currentBucket = Math.floor(saturation / 5) * 5;
+    const STATE_FILE = path.join(PROJECT_ROOT, '.gemini', 'gcs_notify.state');
+    
+    let lastBucket = 0;
+    try { lastBucket = parseInt(fs.readFileSync(STATE_FILE, 'utf-8'), 10); } catch(e) {}
+
+    if (currentBucket > 0 && currentBucket % 5 === 0 && currentBucket > lastBucket) {
         console.log(`\n[GCS Guardian] Current Context: ${saturation.toFixed(0)}% (${current_tokens} tokens)`);
+        try { fs.writeFileSync(STATE_FILE, currentBucket.toString()); } catch(e) {}
     }
 };
