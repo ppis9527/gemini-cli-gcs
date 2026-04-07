@@ -19,7 +19,7 @@
           {
             "name": "gcs-guardian-monitor",
             "type": "script",
-            "path": "token_monitor.js"
+            "path": "src/gcs/token_monitor.js"
           }
         ]
       }

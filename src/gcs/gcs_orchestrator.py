@@ -103,6 +103,18 @@ class GCSOrchestrator:
             os.rename(tmp_checkpoint, self.checkpoint_path)
             duration = (time.perf_counter() - start_time) * 1000
             self._log(f"Distillation complete in {duration:.2f}ms.")
+
+            # --- WAS (Write-Ahead State) Implementation ---
+            pending_path = os.path.join(self.dot_gemini, "gcs.pending")
+            state = {
+                "last_active_step": "DISTILLATION_COMPLETE",
+                "timestamp": time.time(),
+                "resume_task": "GCS_GOVERNANCE_AUTO"
+            }
+            with open(pending_path, "w") as f:
+                json.dump(state, f)
+            # -----------------------------------------------
+
             return True
         finally:
             fcntl.flock(lock_f, fcntl.LOCK_UN)
