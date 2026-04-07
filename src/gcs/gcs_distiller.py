@@ -126,6 +126,10 @@ class GCSDistiller:
     def stop(self):
         if self.lsp_bridge:
             self.lsp_bridge.stop()
+            self.lsp_bridge = None
+
+    def __del__(self):
+        self.stop()
 
 if __name__ == "__main__":
     distiller = GCSDistiller()

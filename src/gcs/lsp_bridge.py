@@ -82,6 +82,9 @@ class LSPBridge:
                 if msg_id in self.responses:
                     return self.responses.pop(msg_id)
             time.sleep(0.01)
+        
+        with self.lock:
+            self.responses.pop(msg_id, None)
         return None
 
     def _evict_cache(self):
