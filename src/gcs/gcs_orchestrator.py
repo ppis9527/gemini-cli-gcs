@@ -58,7 +58,7 @@ class GCSOrchestrator:
             self._log("Git index locked, postponing.")
             return False
         try:
-            lock_f = open(self.lock_path, "w")
+            lock_f = open(self.lock_path, "a") # Changed from "w" to "a"
             fcntl.flock(lock_f, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except (IOError, OSError):
             self._log("Distillation in progress, skipping.")
