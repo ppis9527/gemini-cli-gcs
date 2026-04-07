@@ -42,7 +42,7 @@ module.exports = async function(context) {
 
     // 3. Proactive Notifications (Every 5%)
     const current_tokens = context.input_tokens || 0;
-    const limit = context.max_tokens || 2000000; // Calibrated to 2M context window
+    const limit = context.max_tokens || 20000000; // Calibrated to 20M context window
     const saturation = (current_tokens / limit) * 100;
 
     // Display notification for every 5% increment (e.g., 5%, 10%, 15%...)
