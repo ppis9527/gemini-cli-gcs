@@ -10,15 +10,13 @@ class GCSRehydrator:
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super(GCSRehydrator, cls).__new__(cls)
-                cls._instance._initialized = False
+                cls._instance.checkpoint_path = checkpoint_path
+                cls._instance.checkpoint = cls._instance._load_checkpoint()
             return cls._instance
 
     def __init__(self, checkpoint_path):
-        if self._initialized:
-            return
-        self.checkpoint_path = checkpoint_path
-        self.checkpoint = self._load_checkpoint()
-        self._initialized = True
+        # Initialization is now safely handled entirely within __new__'s lock
+        pass
 
     def _load_checkpoint(self):
         if os.path.exists(self.checkpoint_path):
