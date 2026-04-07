@@ -19,14 +19,20 @@ if [ -f "$CHECKPOINT" ]; then
         exit 0
     fi
 
+    # Try decoding as zlib base64 first. Fallback to raw for backward compatibility.
+    DECODED_JSON=$(python3 -c "import sys, zlib, base64; sys.stdout.write(zlib.decompress(base64.b64decode(sys.stdin.read().strip())).decode('utf-8'))" < "$CHECKPOINT" 2>/dev/null)
+    if [ -z "$DECODED_JSON" ]; then
+        DECODED_JSON=$(cat "$CHECKPOINT")
+    fi
+
     # 1. Validate JSON
-    if ! jq empty "$CHECKPOINT" >/dev/null 2>&1; then
+    if ! echo "$DECODED_JSON" | jq empty >/dev/null 2>&1; then
         exit 0
     fi
 
     # 2. Verify Commit SHA (Branch-Aware Safety)
     CURRENT_SHA=$(git rev-parse HEAD 2>/dev/null || echo "no-git-repo")
-    CHECKPOINT_SHA=$(jq -r '.commit_sha' "$CHECKPOINT")
+    CHECKPOINT_SHA=$(echo "$DECODED_JSON" | jq -r '.commit_sha')
 
     if [ "$CURRENT_SHA" != "$CHECKPOINT_SHA" ]; then
         # Branch/Commit changed - ignore stale checkpoint to prevent context poisoning
@@ -36,7 +42,7 @@ if [ -f "$CHECKPOINT" ]; then
 
     # 3. Output L4 Injection Block
     echo "<gcs_checkpoint_restore>"
-    cat "$CHECKPOINT"
+    echo "$DECODED_JSON"
     echo "</gcs_checkpoint_restore>"
     echo "<gcs_status>SUCCESS: Checkpoint Re-hydrated via SessionStart (clear)</gcs_status>"
     

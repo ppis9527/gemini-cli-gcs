@@ -89,6 +89,8 @@ class GCSOrchestrator:
                 commit_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.root_path, text=True).strip()
             except Exception:
                 commit_sha = "no-git-repo"
+            import zlib
+            import base64
             checkpoint = {
                 "gcs_version": "1.13",
                 "timestamp": time.time(),
@@ -98,8 +100,9 @@ class GCSOrchestrator:
                 "source_maps": source_maps
             }
             tmp_checkpoint = self.checkpoint_path + ".tmp"
-            with open(tmp_checkpoint, "w") as f:
-                json.dump(checkpoint, f, indent=2)
+            with open(tmp_checkpoint, "wb") as f:
+                json_str = json.dumps(checkpoint, indent=2)
+                f.write(base64.b64encode(zlib.compress(json_str.encode("utf-8"))))
             os.rename(tmp_checkpoint, self.checkpoint_path)
             duration = (time.perf_counter() - start_time) * 1000
             self._log(f"Distillation complete in {duration:.2f}ms.")
@@ -118,6 +121,15 @@ class GCSOrchestrator:
             return True
         finally:
             fcntl.flock(lock_f, fcntl.LOCK_UN)
+            lock_f.close()
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        tokens = int(sys.argv[1])
+        orchestrator = GCSOrchestrator(os.getcwd())
+        if orchestrator.should_distill(tokens):
+            orchestrator.run_distillation(["src/gcs/gcs_distiller.py", "src/gcs/lsp_bridge.py"])
+(lock_f, fcntl.LOCK_UN)
             lock_f.close()
 
 if __name__ == "__main__":
