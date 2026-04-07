@@ -10,7 +10,7 @@ const fs = require('fs');
 module.exports = async function(context) {
     const PROJECT_ROOT = process.cwd();
     const GCS_THRESHOLD = 0.20; // 20%
-    const GCS_LIMIT = context.max_tokens || 20000000; // Calibrated to 20M context window
+    const GCS_LIMIT = context.max_tokens || 2000000; // Fallback to 2M if max_tokens is undefined
     const current_tokens = context.input_tokens || 0;
     const saturation = current_tokens / GCS_LIMIT;
 
