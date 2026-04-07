@@ -30,7 +30,7 @@
 ## 📊 治理指標與閾值 (Context Governance Mandate)
 
 ### ♻️ GCS 生命週期流程 (20% 閾值)
-1. **偵測 (Detection)**: 當 `token_monitor.js` 偵測到 Token 使用率達到 **20% (200k)** 時，自動啟動背景蒸餾。
+1. **偵測 (Detection)**: 當 `token_monitor.js` 偵測到 Token 使用率達到 **20% (400k / 2M)** 時，自動啟動背景蒸餾。
 2. **預警 (Alert)**: 當飽和度達到 80% 時，顯示通知要求使用者執行 `/clear`。
 3. **續行 (Resume)**: 使用者輸入 `/clear` 後，`gcs_init.sh` 讀取 `checkpoint.json` 重灌 L4 骨架並恢復任務狀態。
 
