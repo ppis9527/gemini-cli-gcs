@@ -34,3 +34,12 @@ For deep technical details, see [GCS_GUARDIAN.md](./GCS_GUARDIAN.md) and the [Te
 ---
 *Created by Gemini 3.1 Pro. v1.21 Refined 2026-04-08.*
 #gcs #governance #architecture #gemini-cli
+
+## 📈 Change List
+
+### [2026-04-21] Universal Supply Chain Intelligence (USCI) Framework
+- **Universal Upgrade**: Transitioned from CPO-specific tracking to a generalized industrial intelligence framework.
+- **Semantic Search Architecture**: Adopted  for ACID-compliant vector search, unified at 768 dimensions (Nomic/Google API aligned).
+- **Two-Stage Filtering**: Implemented a robust extraction pipeline: Vector Recall (Stage 1) -> LLM Reasoning (Stage 2).
+- **Entity Resolution 2.0**: Added Wikidata integration for automated ticker and industry alignment.
+- **Schema Generalization**: Renamed core tables to  and  with multi-industry context support.
