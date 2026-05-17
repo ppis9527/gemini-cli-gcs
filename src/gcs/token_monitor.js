@@ -3,28 +3,26 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 
-/**
- * @file token_monitor.js
- * @description GCS Guardian: Precise API-level Token Monitoring (v2.0)
- * @triggered-by AfterModel Hook
- */
-
 try {
   const input = JSON.parse(fs.readFileSync(0, 'utf-8'));
+  
+  // Debug log to capture exactly what the CLI sends
+  fs.writeFileSync('/tmp/gcs_debug_input.json', JSON.stringify(input, null, 2));
 
   // AfterModel: llm_response 包含 usageMetadata
   const resp = input.llm_response;
   if (!resp) { console.log(JSON.stringify({})); process.exit(0); }
 
-  const usage = resp.usageMetadata;
+  // 支援 Gemini (usageMetadata) 與 Claude/OpenAI (usage)
+  const usage = resp.usageMetadata || resp.usage;
   if (!usage) { console.log(JSON.stringify({})); process.exit(0); }
 
-  // 精確 token 拆解
-  const promptTokens   = usage.promptTokenCount       || 0;
-  const outputTokens   = usage.candidatesTokenCount    || 0;
+  // 精確 token 拆解 (相容多模型欄位)
+  const promptTokens   = usage.promptTokenCount       || usage.input_tokens   || 0;
+  const outputTokens   = usage.candidatesTokenCount    || usage.output_tokens  || 0;
   const thinkingTokens = usage.thoughtsTokenCount      || 0;
-  const cachedTokens   = usage.cachedContentTokenCount || 0;
-  const totalTokens    = usage.totalTokenCount         || 0;
+  const cachedTokens   = usage.cachedContentTokenCount || usage.cache_creation_input_tokens || usage.cache_read_input_tokens || 0;
+  const totalTokens    = usage.totalTokenCount         || (promptTokens + outputTokens) || 0;
 
   if (promptTokens === 0) { console.log(JSON.stringify({})); process.exit(0); }
 
@@ -37,6 +35,14 @@ try {
   const contextUsed = promptTokens;
   const ratio = contextUsed / MAX_CONTEXT;
   const THRESHOLD = 0.2;
+  const percentUsed = Math.round(ratio * 100);
+
+  // Tmux status 寫入全域狀態檔案
+  const globalStatusPath = path.join(process.env.HOME, '.gemini/gcs-guardian/tmux_status');
+  try {
+    fs.mkdirSync(path.dirname(globalStatusPath), { recursive: true });
+    fs.writeFileSync(globalStatusPath, `[GCS: ${percentUsed}%]`);
+  } catch(e) {}
 
   // State 管理
   const projectRoot = findProjectRoot(process.cwd());
@@ -83,17 +89,17 @@ try {
   if (ratio >= THRESHOLD) {
     process.stderr.write(`\n🚨 [GCS] ${Math.round(THRESHOLD*100)}% Threshold! prompt=${promptTokens.toLocaleString()} (YOLO ACTIVE)\n`);
     
-    // 定位 Orchestrator 路徑
-    const ORCHESTRATOR_PATH = projectRoot 
-      ? path.join(projectRoot, 'src/gcs/gcs_orchestrator.py')
-      : "/Users/yj/.gemini/extensions/gcs-guardian/scripts/gcs_orchestrator.py";
-    
-    const VENV_PYTHON = projectRoot
-      ? path.join(projectRoot, '.gemini/gcs-venv/bin/python3')
-      : "/Users/yj/.gemini/extensions/gcs-guardian/venv/bin/python3";
+    // Tmux 實時視效與狀態更新
+    try {
+      exec(`tmux display-message '🚨 [GCS] Background YOLO distillation triggered! (prompt: ${promptTokens.toLocaleString()})'`);
+      fs.writeFileSync(globalStatusPath, `[GCS: ${percentUsed}% ⚡ YOLO]`);
+    } catch(e) {}
 
-    exec(`${VENV_PYTHON} ${ORCHESTRATOR_PATH} --background`, (error, stdout, stderr) => {
-      if (error) process.stderr.write(`[GCS YOLO ERROR] ${error.message}\n`);
+    exec("/Users/yj/.gemini/extensions/gcs-guardian/venv/bin/python3 /Users/yj/.gemini/extensions/gcs-guardian/scripts/gcs_orchestrator.py --compress", (error, stdout, stderr) => {
+      if (error) {
+        process.stderr.write(`[GCS YOLO ERROR] ${error.message}\n`);
+        try { exec(`tmux display-message '❌ [GCS] YOLO Distillation failed!'`); } catch(e) {}
+      }
       if (stdout) process.stderr.write(stdout);
     });
   }

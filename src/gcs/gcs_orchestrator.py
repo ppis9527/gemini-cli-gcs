@@ -1,5 +1,12 @@
 import os
 import sys
+
+# Ensure src directory is in sys.path for relative imports to work when run as script
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_src_root = os.path.dirname(_current_dir)
+if _src_root not in sys.path:
+    sys.path.insert(0, _src_root)
+
 import json
 import time
 import subprocess
