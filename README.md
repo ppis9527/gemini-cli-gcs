@@ -29,13 +29,19 @@ This system is designed to be installed as a Gemini CLI Global Extension.
 
 ## 📜 Specification
 
-For deep technical details, see [GCS_GUARDIAN.md](./GCS_GUARDIAN.md) and the [Technical Whitepaper](./docs/GCS-Guardian-Ultimate-Whitepaper-v1.20.md).
+For deep technical details, see [GCS_GUARDIAN.md](./GCS_GUARDIAN.md) and the [Technical Whitepaper](./docs/gcs/GCS-Guardian-Ultimate-Whitepaper-v1.22.0.md).
 
 ---
-*Created by Gemini 3.1 Pro. v1.21 Refined 2026-04-08.*
+*Created by Gemini 3.1 Pro. v1.22.0 Refined 2026-05-18.*
 #gcs #governance #architecture #gemini-cli
 
 ## 📈 Change List
+
+### [2026-05-18] GCS Guardian v1.22.0: Precision Monitoring & Tmux Integration
+- **Cross-Model Compatibility**: Dynamically parses Gemini's `usageMetadata.promptTokenCount` and Claude/OpenAI's `usage.input_tokens` in `token_monitor.js`.
+- **Tmux Integration**: Unconditional state reset to `[GCS: 0%]` via `gcs_init.sh` and real-time lightweight status polling via `tmux_status`. Visual banner alerts triggered on YOLO distillations via `tmux display-message`.
+- **Global Hook Binding**: Deprecated `extension.json` binding for `AfterModel` due to CLI module loading restrictions, migrating to `~/.gemini/settings.json` with `matcher: "*"`.
+- **Whitepaper Update**: Upgraded architectural SSOT to v1.22.0.
 
 ### [2026-04-21] Universal Supply Chain Intelligence (USCI) Framework
 - **Universal Upgrade**: Transitioned from CPO-specific tracking to a generalized industrial intelligence framework.
