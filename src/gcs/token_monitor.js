@@ -95,7 +95,10 @@ try {
       fs.writeFileSync(globalStatusPath, `[GCS: ${percentUsed}% ⚡ YOLO]`);
     } catch(e) {}
 
-    exec("/Users/yj/.gemini/extensions/gcs-guardian/venv/bin/python3 /Users/yj/.gemini/extensions/gcs-guardian/scripts/gcs_orchestrator.py --compress", (error, stdout, stderr) => {
+    const homeDir = process.env.HOME;
+    const pythonPath = path.join(homeDir, '.gemini/extensions/gcs-guardian/venv/bin/python3');
+    const orchestratorPath = path.join(homeDir, '.gemini/extensions/gcs-guardian/scripts/gcs_orchestrator.py');
+    exec(`"${pythonPath}" "${orchestratorPath}" --compress`, (error, stdout, stderr) => {
       if (error) {
         process.stderr.write(`[GCS YOLO ERROR] ${error.message}\n`);
         try { exec(`tmux display-message '❌ [GCS] YOLO Distillation failed!'`); } catch(e) {}
