@@ -65,6 +65,7 @@ try {
   const currentStep = Math.floor(ratio / 0.05);
 
   // 📊 每 5% 階梯通知 — 顯示完整拆解方便對照 CLI 右下角數值
+  // 📊 每 5% 階梯通知 — 顯示完整拆解方便對照 CLI 右下角數值
   if (currentStep > lastStep) {
     const percent = currentStep * 5;
     process.stderr.write(
@@ -76,20 +77,22 @@ try {
       `| ${contextUsed.toLocaleString()}/${MAX_CONTEXT.toLocaleString()} ` +
       `| model=${modelName}\n`
     );
-    fs.writeFileSync(STATE_FILE, JSON.stringify({
-      last_ratio: ratio,
-      last_notified_step: currentStep,
-      last_compressed_step: lastCompressedStep,
-      prompt_tokens: promptTokens,
-      output_tokens: outputTokens,
-      thinking_tokens: thinkingTokens,
-      cached_tokens: cachedTokens,
-      total_tokens: totalTokens,
-      max_context: MAX_CONTEXT,
-      model: modelName,
-      timestamp: new Date().toISOString()
-    }));
   }
+
+  // 每一輪對話無條件寫入，以維持 Single Source of Truth
+  fs.writeFileSync(STATE_FILE, JSON.stringify({
+    last_ratio: ratio,
+    last_notified_step: Math.max(currentStep, lastStep),
+    last_compressed_step: lastCompressedStep,
+    prompt_tokens: promptTokens,
+    output_tokens: outputTokens,
+    thinking_tokens: thinkingTokens,
+    cached_tokens: cachedTokens,
+    total_tokens: totalTokens,
+    max_context: MAX_CONTEXT,
+    model: modelName,
+    timestamp: new Date().toISOString()
+  }));
 
   // 🚨 20% YOLO 治理觸發 (加入 lastCompressedStep 門檻防重複 trigger)
   if (ratio >= THRESHOLD && currentStep > lastCompressedStep) {
