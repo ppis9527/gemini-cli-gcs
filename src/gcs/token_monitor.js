@@ -53,8 +53,13 @@ try {
 
   const STATE_FILE = path.join(STATE_DIR, 'monitor_state.json');
   let lastStep = 0;
+  let lastCompressedStep = 0;
   if (fs.existsSync(STATE_FILE)) {
-    try { lastStep = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8')).last_notified_step || 0; } catch(e) {}
+    try {
+      const state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+      lastStep = state.last_notified_step || 0;
+      lastCompressedStep = state.last_compressed_step || 0;
+    } catch(e) {}
   }
 
   const currentStep = Math.floor(ratio / 0.05);
@@ -74,6 +79,7 @@ try {
     fs.writeFileSync(STATE_FILE, JSON.stringify({
       last_ratio: ratio,
       last_notified_step: currentStep,
+      last_compressed_step: lastCompressedStep,
       prompt_tokens: promptTokens,
       output_tokens: outputTokens,
       thinking_tokens: thinkingTokens,
@@ -85,8 +91,8 @@ try {
     }));
   }
 
-  // 🚨 20% YOLO 治理觸發
-  if (ratio >= THRESHOLD) {
+  // 🚨 20% YOLO 治理觸發 (加入 lastCompressedStep 門檻防重複 trigger)
+  if (ratio >= THRESHOLD && currentStep > lastCompressedStep) {
     process.stderr.write(`\n🚨 [GCS] ${Math.round(THRESHOLD*100)}% Threshold! prompt=${promptTokens.toLocaleString()} (YOLO ACTIVE)\n`);
     
     // Tmux 實時視效與狀態更新
@@ -94,6 +100,21 @@ try {
       exec(`tmux display-message '🚨 [GCS] Background YOLO distillation triggered! (prompt: ${promptTokens.toLocaleString()})'`);
       fs.writeFileSync(globalStatusPath, `[GCS: ${percentUsed}% ⚡ YOLO]`);
     } catch(e) {}
+
+    // 立即更新狀態鎖，防止背景非同步執行期間被重複觸發
+    fs.writeFileSync(STATE_FILE, JSON.stringify({
+      last_ratio: ratio,
+      last_notified_step: Math.max(currentStep, lastStep),
+      last_compressed_step: currentStep,
+      prompt_tokens: promptTokens,
+      output_tokens: outputTokens,
+      thinking_tokens: thinkingTokens,
+      cached_tokens: cachedTokens,
+      total_tokens: totalTokens,
+      max_context: MAX_CONTEXT,
+      model: modelName,
+      timestamp: new Date().toISOString()
+    }));
 
     const homeDir = process.env.HOME;
     const pythonPath = path.join(homeDir, '.gemini/extensions/gcs-guardian/venv/bin/python3');
