@@ -30,7 +30,7 @@ try {
 
   try {
     fs.mkdirSync(path.dirname(globalStatusPath), { recursive: true });
-    fs.writeFileSync(globalStatusPath, `[GCS: ${percentUsed}%${flashIcon}]`);
+    fs.writeFileSync(globalStatusPath, `GCS: ${percentUsed}%${flashIcon}`);
   } catch(e) {}
 
   const STATE_DIR = projectRoot ? path.join(projectRoot, '.gemini') : path.join(process.env.HOME, '.gemini/gcs-guardian/tmp_state');
