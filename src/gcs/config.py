@@ -43,4 +43,4 @@ def get_paths(project_root: str) -> dict:
         "notify_state": dot_gemini / "gcs_notify.state",
     }
 
-__version__ = "1.21.0"
+__version__ = "1.23.0"

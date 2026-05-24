@@ -32,10 +32,15 @@ This system is designed to be installed as a Gemini CLI Global Extension.
 For deep technical details, see [GCS_GUARDIAN.md](./GCS_GUARDIAN.md) and the [Technical Whitepaper](./docs/gcs/GCS-Guardian-Ultimate-Whitepaper-v1.22.0.md).
 
 ---
-*Created by Gemini 3.1 Pro. v1.22.0 Refined 2026-05-18.*
+*Created by Gemini 3.1 Pro. v1.23.0 Refined 2026-05-24.*
 #gcs #governance #architecture #gemini-cli
 
 ## 📈 Change List
+
+### [2026-05-24] GCS Guardian v1.23.0: YOLO Double-Threshold & Session Boundary Refinements
+- **Double-Threshold YOLO**: Context at 20% triggers quiet background `summarize` (AST skeletons checkpointed to `checkpoint.json` & `.gemini/gcs.pending` as `status: Summarized`), displaying `xx.x% ⚡` in footer and tmux without clearing the active Session history. Standard `Governance Triggered` status and Cold Reset (clearing history) are deferred until 60% system-level Compaction or manual `/compress`.
+- **UI Format Refinements**: Standardized all GCS context usage percentages to display with exactly 1 decimal place (e.g. `xx.x% ⚡`) across statusline and tmux status files.
+- **Verbose Log Silencing**: Completely removed the 5% verbose incremental console logger (`📊 [GCS]`) from `token_monitor.js` to avoid cluttering tool outputs.
 
 ### [2026-05-18] GCS Guardian v1.22.0: Precision Monitoring & Tmux Integration
 - **Cross-Model Compatibility**: Dynamically parses Gemini's `usageMetadata.promptTokenCount` and Claude/OpenAI's `usage.input_tokens` in `token_monitor.js`.
