@@ -34,102 +34,102 @@ try {
   // ✅ 用 promptTokenCount：這才是真正佔用 context window 的量
   const contextUsed = promptTokens;
   const ratio = contextUsed / MAX_CONTEXT;
-  const THRESHOLD = 0.2;
+  const THRESHOLD = 0.6; // 調整為 60% YOLO 觸發閾值
   const percentUsed = Math.round(ratio * 100);
+  const percentUsedFmt = (ratio * 100).toFixed(1);
+
+  // State 管理與專案路徑判斷
+  const projectRoot = findProjectRoot(process.cwd());
+  const hasPending = projectRoot && fs.existsSync(path.join(projectRoot, '.gemini/gcs.pending'));
+  const suffix = hasPending ? ' ⚡' : '';
 
   // Tmux status 寫入全域狀態檔案
   const globalStatusPath = path.join(process.env.HOME, '.gemini/gcs-guardian/tmux_status');
   try {
     fs.mkdirSync(path.dirname(globalStatusPath), { recursive: true });
-    fs.writeFileSync(globalStatusPath, `[GCS: ${percentUsed}%]`);
+    fs.writeFileSync(globalStatusPath, `[GCS: ${percentUsedFmt}%${suffix}]`);
   } catch(e) {}
 
-  // State 管理
-  const projectRoot = findProjectRoot(process.cwd());
   const STATE_DIR = projectRoot
     ? path.join(projectRoot, '.gemini')
     : path.join(process.env.HOME, '.gemini/gcs-guardian/tmp_state');
   if (!fs.existsSync(STATE_DIR)) fs.mkdirSync(STATE_DIR, { recursive: true });
 
   const STATE_FILE = path.join(STATE_DIR, 'monitor_state.json');
-  let lastStep = 0;
-  let lastCompressedStep = 0;
+  let lastCompressed20Step = 0;
+  let lastCompressed60Step = 0;
   if (fs.existsSync(STATE_FILE)) {
     try {
       const state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
-      lastStep = state.last_notified_step || 0;
-      lastCompressedStep = state.last_compressed_step || 0;
+      lastCompressed20Step = state.last_compressed_20_step || 0;
+      lastCompressed60Step = state.last_compressed_60_step || 0;
     } catch(e) {}
   }
 
-  const currentStep = Math.floor(ratio / 0.05);
+  const current20Step = Math.floor(ratio / 0.20);
+  const current60Step = Math.floor(ratio / 0.60);
 
-  // 📊 每 5% 階梯通知 — 顯示完整拆解方便對照 CLI 右下角數值
-  // 📊 每 5% 階梯通知 — 顯示完整拆解方便對照 CLI 右下角數值
-  if (currentStep > lastStep) {
-    const percent = currentStep * 5;
-    process.stderr.write(
-      `\n📊 [GCS] Context: ${percent}% ` +
-      `| prompt=${promptTokens.toLocaleString()} ` +
-      `out=${outputTokens.toLocaleString()} ` +
-      `think=${thinkingTokens.toLocaleString()} ` +
-      `cached=${cachedTokens.toLocaleString()} ` +
-      `| ${contextUsed.toLocaleString()}/${MAX_CONTEXT.toLocaleString()} ` +
-      `| model=${modelName}\n`
-    );
-  }
+  const homeDir = process.env.HOME;
+  const pythonPath = path.join(homeDir, '.gemini/extensions/gcs-guardian/venv/bin/python3');
+  const orchestratorPath = path.join(homeDir, '.gemini/extensions/gcs-guardian/scripts/gcs_orchestrator.py');
 
-  // 每一輪對話無條件寫入，以維持 Single Source of Truth
-  fs.writeFileSync(STATE_FILE, JSON.stringify({
-    last_ratio: ratio,
-    last_notified_step: Math.max(currentStep, lastStep),
-    last_compressed_step: lastCompressedStep,
-    prompt_tokens: promptTokens,
-    output_tokens: outputTokens,
-    thinking_tokens: thinkingTokens,
-    cached_tokens: cachedTokens,
-    total_tokens: totalTokens,
-    max_context: MAX_CONTEXT,
-    model: modelName,
-    timestamp: new Date().toISOString()
-  }));
-
-  // 🚨 20% YOLO 治理觸發 (加入 lastCompressedStep 門檻防重複 trigger)
-  if (ratio >= THRESHOLD && currentStep > lastCompressedStep) {
-    process.stderr.write(`\n🚨 [GCS] ${Math.round(THRESHOLD*100)}% Threshold! prompt=${promptTokens.toLocaleString()} (YOLO ACTIVE)\n`);
-    
-    // Tmux 實時視效與狀態更新
+  function writeState() {
     try {
-      exec(`tmux display-message '🚨 [GCS] Background YOLO distillation triggered! (prompt: ${promptTokens.toLocaleString()})'`);
-      fs.writeFileSync(globalStatusPath, `[GCS: ${percentUsed}% ⚡ YOLO]`);
+      fs.writeFileSync(STATE_FILE, JSON.stringify({
+        last_ratio: ratio,
+        last_compressed_20_step: lastCompressed20Step,
+        last_compressed_60_step: lastCompressed60Step,
+        prompt_tokens: promptTokens,
+        output_tokens: outputTokens,
+        thinking_tokens: thinkingTokens,
+        cached_tokens: cachedTokens,
+        total_tokens: totalTokens,
+        max_context: MAX_CONTEXT,
+        model: modelName,
+        timestamp: new Date().toISOString()
+      }, null, 2));
+    } catch(e) {}
+  }
+
+  // 1. 🚨 20% YOLO 觸發：僅 summarize 寫入 pending，不銷毀 Session
+  if (ratio >= 0.2 && ratio < 0.6 && current20Step > lastCompressed20Step) {
+    lastCompressed20Step = current20Step;
+    writeState();
+
+    try {
+      exec(`tmux display-message '🚨 [GCS] 20% YOLO summarize triggered.'`);
+      fs.writeFileSync(globalStatusPath, `[GCS: ${percentUsedFmt}% ⚡]`);
     } catch(e) {}
 
-    // 立即更新狀態鎖，防止背景非同步執行期間被重複觸發
-    fs.writeFileSync(STATE_FILE, JSON.stringify({
-      last_ratio: ratio,
-      last_notified_step: Math.max(currentStep, lastStep),
-      last_compressed_step: currentStep,
-      prompt_tokens: promptTokens,
-      output_tokens: outputTokens,
-      thinking_tokens: thinkingTokens,
-      cached_tokens: cachedTokens,
-      total_tokens: totalTokens,
-      max_context: MAX_CONTEXT,
-      model: modelName,
-      timestamp: new Date().toISOString()
-    }));
-
-    const homeDir = process.env.HOME;
-    const pythonPath = path.join(homeDir, '.gemini/extensions/gcs-guardian/venv/bin/python3');
-    const orchestratorPath = path.join(homeDir, '.gemini/extensions/gcs-guardian/scripts/gcs_orchestrator.py');
     exec(`"${pythonPath}" "${orchestratorPath}" --compress`, (error, stdout, stderr) => {
       if (error) {
-        process.stderr.write(`[GCS YOLO ERROR] ${error.message}\n`);
-        try { exec(`tmux display-message '❌ [GCS] YOLO Distillation failed!'`); } catch(e) {}
+        process.stderr.write(`[GCS 20% YOLO ERROR] ${error.message}\n`);
       }
       if (stdout) process.stderr.write(stdout);
     });
   }
+
+  // 2. 🚨 60% YOLO 觸發：在系統 Compaction 前執行 summarize 並準備銷毀 Session
+  if (ratio >= 0.6 && current60Step > lastCompressed60Step) {
+    lastCompressed60Step = current60Step;
+    writeState();
+
+    try {
+      exec(`tmux display-message '🚨 [GCS] 60% YOLO Pre-Compaction summarize triggered!'`);
+      fs.writeFileSync(globalStatusPath, `[GCS: ${percentUsedFmt}% ⚡ YOLO]`);
+    } catch(e) {}
+
+    exec(`"${pythonPath}" "${orchestratorPath}" --compress`, (error, stdout, stderr) => {
+      if (error) {
+        process.stderr.write(`[GCS 60% YOLO ERROR] ${error.message}\n`);
+        try { exec(`tmux display-message '❌ [GCS] 60% YOLO Distillation failed!'`); } catch(e) {}
+      }
+      if (stdout) process.stderr.write(stdout);
+    });
+  }
+
+  // 預設無條件寫入，以維持 Single Source of Truth
+  writeState();
 } catch(e) {
   // AfterModel fires per chunk — some chunks won't have usageMetadata, silently skip
 }
