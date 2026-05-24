@@ -1,6 +1,6 @@
 # 🛰️ GCS Guardian: Context Governance System (SSOT)
 
-> [!important] GCS 運作指南 (v1.22.0)
+> [!important] GCS 運作指南 (v1.23.0)
 > 本專案為 GCS Guardian 終極治理系統。所有 Context 與對話進度均受 L4 骨架重灌協議保護，嚴格執行 20% 閾值蒸餾監控。
 
 ---
