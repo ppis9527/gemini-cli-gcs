@@ -49,10 +49,10 @@ This system is designed to be installed as a Gemini CLI Global Extension.
 
 ## 📜 Specification
 
-For deep technical details, see [GCS_GUARDIAN.md](./GCS_GUARDIAN.md) and the [Technical Whitepaper](./docs/gcs/GCS-Guardian-Ultimate-Whitepaper-v1.22.0.md).
+For deep technical details, see [GCS_GUARDIAN.md](./GCS_GUARDIAN.md) and the [Technical Whitepaper](./docs/gcs/GCS-Guardian-Ultimate-Whitepaper-v1.24.0.md).
 
 ---
-*Created by Gemini 3.1 Pro. v1.23.0 Refined 2026-05-24.*
+*Created by Gemini 3.1 Pro. v1.24.0 Refined 2026-05-31.*
 #gcs #governance #architecture #gemini-cli
 
 ## 📈 Change List
