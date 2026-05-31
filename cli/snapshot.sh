@@ -5,7 +5,7 @@
 
 TIMESTAMP=$(date +"%Y-%m-%d")
 TITLE="Memory Snapshot - $TIMESTAMP"
-OUTPUT_DIR="/Users/yjliu/Library/CloudStorage/GoogleDrive-jerryyrliu@gmail.com/我的雲端硬碟/OpenClaw Agents/01_Obsidian/09_memory-snapshot"
+OUTPUT_DIR="/Users/yj/我的雲端硬碟/OpenClaw Agents/01_Obsidian/09_memory-snapshot"
 FILE_PATH="$OUTPUT_DIR/${TIMESTAMP}_Memory_Summary.md"
 
 SUMMARY_CONTENT=$1
