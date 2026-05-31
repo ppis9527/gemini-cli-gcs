@@ -1,0 +1,15 @@
+# Python bytecode/cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+.gemini/gcs-venv/
+
+# Local runtime state
+.gemini/*.log
+.gemini/*.lock
+.gemini/*.pending
+.gemini/monitor_state.json
+.gemini/gcs_notify.state
