@@ -1,9 +1,23 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
+const { exec, execSync } = require('child_process');
 
-try {
+function resolveMaxContext(modelName) {
+  const model = (modelName || '').toLowerCase();
+  const MODEL_CONTEXT_MAP = {
+    'gemini-2.5-pro': 2097152,
+    'gemini-2.5-flash': 1048576,
+  };
+  return MODEL_CONTEXT_MAP[model] || 1048576;
+}
+
+function getCompactBucketsToTrigger(lastCompactBucket, percent, buckets = [20, 30, 40, 50]) {
+  return buckets.filter((b) => b > lastCompactBucket && b <= percent);
+}
+
+function main() {
+  try {
   const input = JSON.parse(fs.readFileSync(0, 'utf-8'));
   const resp = input.llm_response;
   if (!resp) { console.log(JSON.stringify({})); process.exit(0); }
@@ -17,14 +31,13 @@ try {
   
   if (promptTokens === 0) { console.log(JSON.stringify({})); process.exit(0); }
 
-  const modelName = (resp.model || input.llm_request?.model || 'flash').toLowerCase();
-  let MAX_CONTEXT = 1048576;
-  if (modelName.includes('pro')) MAX_CONTEXT = 2097152;
+  const modelName = (resp.model || input.llm_request?.model || 'gemini-2.5-flash').toLowerCase();
+  const MAX_CONTEXT = resolveMaxContext(modelName);
 
   const ratio = promptTokens / MAX_CONTEXT;
   const percentUsed = (ratio * 100).toFixed(1);
 
-  const projectRoot = findProjectRoot(process.cwd());
+  const projectRoot = findProjectRoot(process.cwd()) || (fs.existsSync(path.join(process.cwd(), 'src', 'gcs', 'gcs_orchestrator.py')) ? process.cwd() : null);
   const globalStatusPath = path.join(process.env.HOME, '.gemini/gcs-guardian/tmux_status');
   const flashIcon = (projectRoot && fs.existsSync(path.join(projectRoot, '.gemini', 'gcs.pending'))) ? " ⚡" : "";
 
@@ -38,35 +51,99 @@ try {
 
   const STATE_FILE = path.join(STATE_DIR, 'monitor_state.json');
   let lastStep = 0;
+  let lastCompactBucket = 0;
   if (fs.existsSync(STATE_FILE)) {
-    try { lastStep = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8')).last_notified_step || 0; } catch(e) {}
+    try {
+      const state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+      lastStep = state.last_notified_step || 0;
+      lastCompactBucket = state.last_compact_bucket || 0;
+    } catch(e) {}
   }
   const currentStep = Math.floor(ratio / 0.05);
+  const currentPercent = ratio * 100;
 
   if (currentStep > lastStep) {
     process.stderr.write(`\n📊 [GCS] Context: ${currentStep * 5}% | prompt=${promptTokens.toLocaleString()} | model=${modelName}\n`);
-    fs.writeFileSync(STATE_FILE, JSON.stringify({ last_notified_step: currentStep, prompt_tokens: promptTokens, max_context: MAX_CONTEXT, timestamp: new Date().toISOString() }));
   }
 
-  if (ratio >= 0.2) {
-    process.stderr.write(`\n🚨 [GCS] Threshold! (YOLO ACTIVE)\n`);
+  const pendingCompactBuckets = getCompactBucketsToTrigger(lastCompactBucket, currentPercent);
+  for (const bucket of pendingCompactBuckets) {
+    process.stderr.write(`\n🚨 [GCS] ${bucket}% threshold reached. Background compact triggered.\n`);
     try {
       exec(`tmux display-message '🚨 [GCS] Background YOLO distillation triggered!'`);
       fs.writeFileSync(globalStatusPath, `[GCS: ${percentUsed}% ⚡ YOLO]`);
     } catch(e) {}
-    const pythonPath = path.join(process.env.HOME, '.gemini/extensions/gcs-guardian/venv/bin/python3');
-    const orchestratorPath = path.join(process.env.HOME, '.gemini/extensions/gcs-guardian/scripts/gcs_orchestrator.py');
-    exec(`"${pythonPath}" "${orchestratorPath}" --compress`, (error, stdout) => { if (stdout) process.stderr.write(stdout); });
+    const localPython = path.join(projectRoot || "", '.gemini', 'gcs-venv', 'bin', 'python3');
+    const extensionPython = path.join(process.env.HOME, '.gemini/extensions/gcs-guardian/venv/bin/python3');
+    const pythonPath = fs.existsSync(localPython) ? localPython : (fs.existsSync(extensionPython) ? extensionPython : 'python3');
+
+    const localOrchestrator = projectRoot ? path.join(projectRoot, 'src', 'gcs', 'gcs_orchestrator.py') : '';
+    const extensionOrchestrator = path.join(process.env.HOME, '.gemini/extensions/gcs-guardian/scripts/gcs_orchestrator.py');
+    const orchestratorPath = fs.existsSync(localOrchestrator) ? localOrchestrator : extensionOrchestrator;
+    const preflightPath = projectRoot ? path.join(projectRoot, 'src', 'gcs', 'gcs_preflight.py') : '';
+
+    if (fs.existsSync(orchestratorPath)) {
+      let preflightOk = true;
+      if (fs.existsSync(preflightPath)) {
+        try {
+          execSync(`"${pythonPath}" "${preflightPath}"`, { stdio: 'ignore' });
+        } catch (e) {
+          try {
+            execSync(`python3 "${preflightPath}"`, { stdio: 'ignore' });
+          } catch (fallbackErr) {
+            preflightOk = false;
+            process.stderr.write(`\n[WARN] GCS preflight failed. Install deps: pip install -r requirements.txt\n`);
+          }
+        }
+      }
+
+      if (preflightOk) {
+        exec(`"${pythonPath}" "${orchestratorPath}" --background`, (error, stdout, stderr) => {
+          if (stdout) process.stderr.write(stdout);
+          if (stderr) process.stderr.write(stderr);
+        });
+      }
+    } else {
+      process.stderr.write(`\n[WARN] GCS orchestrator not found: ${orchestratorPath}\n`);
+    }
+    lastCompactBucket = bucket;
   }
-} catch(e) {}
+
+  fs.writeFileSync(STATE_FILE, JSON.stringify({
+    last_notified_step: Math.max(lastStep, currentStep),
+    last_compact_bucket: lastCompactBucket,
+    prompt_tokens: promptTokens,
+    max_context: MAX_CONTEXT,
+    model_name: modelName,
+    timestamp: new Date().toISOString()
+  }));
+  } catch(e) {
+    process.stderr.write(`\n[ERROR] token_monitor failed: ${e && e.stack ? e.stack : e}\n`);
+  }
+}
 
 function findProjectRoot(current) {
   let depth = 0;
   while (current !== '/' && depth < 10) {
-    if (fs.existsSync(path.join(current, '.git')) || fs.existsSync(path.join(current, 'GEMINI.md'))) return current;
+    if (
+      fs.existsSync(path.join(current, '.git')) ||
+      fs.existsSync(path.join(current, 'GEMINI.md')) ||
+      fs.existsSync(path.join(current, 'src', 'gcs', 'gcs_orchestrator.py'))
+    ) return current;
     current = path.dirname(current);
     depth++;
   }
   return null;
 }
-console.log(JSON.stringify({}));
+
+if (require.main === module) {
+  main();
+  console.log(JSON.stringify({}));
+}
+
+module.exports = {
+  resolveMaxContext,
+  getCompactBucketsToTrigger,
+  findProjectRoot,
+  main,
+};

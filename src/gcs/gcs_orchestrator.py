@@ -53,7 +53,12 @@ class GCSOrchestrator:
                 checkpoint = json.loads(raw.decode("utf-8"))
 
             try:
-                current_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.root_path, text=True).strip()
+                current_sha = subprocess.check_output(
+                    ["git", "rev-parse", "HEAD"],
+                    cwd=self.root_path,
+                    text=True,
+                    stderr=subprocess.DEVNULL
+                ).strip()
             except Exception:
                 current_sha = "no-git-repo"
             
@@ -120,7 +125,12 @@ class GCSOrchestrator:
                     skeletons[f"COMMON_BUCKET_{idx}"] = bucket
             
             try:
-                commit_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.root_path, text=True).strip()
+                commit_sha = subprocess.check_output(
+                    ["git", "rev-parse", "HEAD"],
+                    cwd=self.root_path,
+                    text=True,
+                    stderr=subprocess.DEVNULL
+                ).strip()
             except Exception:
                 commit_sha = "no-git-repo"
             
@@ -165,7 +175,7 @@ def main():
         try:
             tracked = subprocess.check_output(
                 ["git", "ls-files", "--", "*.py", "*.js", "*.ts", "*.tsx"],
-                cwd=os.getcwd(), text=True
+                cwd=os.getcwd(), text=True, stderr=subprocess.DEVNULL
             ).splitlines()
         except Exception:
             tracked = []

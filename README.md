@@ -24,8 +24,9 @@ GCS Guardian is an industrial-grade self-regulating framework for Gemini CLI, de
 This system is designed to be installed as a Gemini CLI Global Extension.
 
 1. Clone the repository.
-2. Run `src/gcs/setup.sh` to initialize the virtual environment.
-3. Register the hooks in your `~/.gemini/settings.json`.
+2. Install Python dependencies: `pip install -r requirements.txt`.
+3. Run `src/gcs/setup.sh` to initialize the virtual environment.
+4. Register the hooks in your `~/.gemini/settings.json`.
 
 ## 📜 Specification
 

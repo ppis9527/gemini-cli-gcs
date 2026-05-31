@@ -1,6 +1,14 @@
 import os
 import sys
-from gcs_rehydrator import GCSRehydrator
+import argparse
+
+# Ensure src directory is in sys.path when run as a script.
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_src_root = os.path.dirname(_current_dir)
+if _src_root not in sys.path:
+    sys.path.insert(0, _src_root)
+
+from gcs.gcs_rehydrator import GCSRehydrator
 
 class GCSIntercept:
     def __init__(self, root_path):
@@ -33,13 +41,20 @@ class GCSIntercept:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--check-intent", action="store_true")
+    parser.add_argument("--file", action="append", default=[])
     args = parser.parse_args()
 
     intercept = GCSIntercept(os.getcwd())
     if args.check_intent:
-        # In a real implementation, parse target files from sys.stdin or arguments
-        # For now, acknowledge the capability flag
-        print("GCS_INTERCEPT: Intent checking enabled. Ready for analysis.")
+        needs_rehydration = False
+        for target in args.file:
+            if intercept.pre_tool_hook("intent_check", {"file_path": target}):
+                needs_rehydration = True
+                break
+        if needs_rehydration:
+            print("RE-HYDRATION_REQUIRED")
+        else:
+            print("GCS_INTERCEPT: Intent checking enabled. Ready for analysis.")
     else:
         # Test simulation
         intercept.pre_tool_hook("read_file", {"file_path": "src/gcs/gcs_distiller.py"})

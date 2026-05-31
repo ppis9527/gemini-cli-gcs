@@ -3,16 +3,18 @@ import json
 import threading
 
 class GCSRehydrator:
-    _instance = None
+    _instances = {}
     _lock = threading.Lock()
 
     def __new__(cls, checkpoint_path):
+        key = os.path.realpath(checkpoint_path)
         with cls._lock:
-            if cls._instance is None:
-                cls._instance = super(GCSRehydrator, cls).__new__(cls)
-                cls._instance.checkpoint_path = checkpoint_path
-                cls._instance.checkpoint = cls._instance._load_checkpoint()
-            return cls._instance
+            if key not in cls._instances:
+                instance = super(GCSRehydrator, cls).__new__(cls)
+                instance.checkpoint_path = key
+                instance.checkpoint = instance._load_checkpoint()
+                cls._instances[key] = instance
+            return cls._instances[key]
 
     def __init__(self, checkpoint_path):
         # Initialization is now safely handled entirely within __new__'s lock
