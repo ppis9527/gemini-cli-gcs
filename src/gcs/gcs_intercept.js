@@ -27,11 +27,14 @@ module.exports = async function(context) {
         // Call Python Interceptor to check target files
         const INTERCEPT_PY = path.join(PROJECT_ROOT, 'src', 'gcs', 'gcs_intercept.py');
         const VENV_PYTHON = path.join(PROJECT_ROOT, '.gemini', 'gcs-venv', 'bin', 'python3');
+        const fallbackPython = 'python3';
+        const pythonCmd = fs.existsSync(VENV_PYTHON) ? VENV_PYTHON : fallbackPython;
+        const candidateFiles = extractCandidateFiles(prompt);
+        const fileArgs = candidateFiles.map((f) => `--file "${f.replace(/"/g, '\\"')}"`).join(" ");
 
         try {
-            // Check if any skeletonized files are being accessed
-            // This is a simplified check for demo; a production script would parse the prompt for file paths
-            const result = execSync(`${VENV_PYTHON} ${INTERCEPT_PY} --check-intent`, { encoding: 'utf-8' });
+            // Check if any skeletonized files are being accessed.
+            const result = execSync(`${pythonCmd} ${INTERCEPT_PY} --check-intent ${fileArgs}`, { encoding: 'utf-8' });
             if (result.includes("RE-HYDRATION_REQUIRED")) {
                 console.log("\n⚠️ GCS: Target file is skeletonized. Re-hydrating context for precision edit...");
             }
@@ -57,3 +60,8 @@ module.exports = async function(context) {
         try { fs.writeFileSync(STATE_FILE, currentBucket.toString()); } catch(e) {}
     }
 };
+
+function extractCandidateFiles(prompt) {
+    const matches = prompt.match(/[A-Za-z0-9_./-]+\.(py|js|ts|tsx|json|md|sh)\b/g) || [];
+    return [...new Set(matches)];
+}

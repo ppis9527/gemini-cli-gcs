@@ -3,7 +3,14 @@ import sys
 import subprocess
 import json
 from datetime import datetime
-from gcs_distiller import GCSDistiller
+
+# Ensure src directory is in sys.path when run as a script.
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_src_root = os.path.dirname(_current_dir)
+if _src_root not in sys.path:
+    sys.path.insert(0, _src_root)
+
+from gcs.gcs_distiller import GCSDistiller
 
 class GCSHealthReport:
     def __init__(self, root_path):
@@ -46,7 +53,7 @@ class GCSHealthReport:
             orig_size = len(content.encode("utf-8"))
             if orig_size == 0: return
 
-            distilled = self.distiller.skeletonize(abs_path, content)
+            distilled, _ = self.distiller.skeletonize(abs_path, content)
             dist_size = len(distilled.encode("utf-8"))
             
             self.results.append({
@@ -55,8 +62,8 @@ class GCSHealthReport:
                 "distilled": dist_size,
                 "saving": orig_size - dist_size
             })
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[WARN] Failed to process {rel_path}: {e}", file=sys.stderr)
 
     def generate_report(self, output_path):
         total_orig = sum(r["original"] for r in self.results)
