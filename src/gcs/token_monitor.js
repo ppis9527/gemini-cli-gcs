@@ -4,12 +4,26 @@ const path = require('path');
 const { exec, execSync } = require('child_process');
 
 function resolveMaxContext(modelName) {
-  const model = (modelName || '').toLowerCase();
+  const model = (modelName || "").toLowerCase();
+  
+  // High-priority exact matches
   const MODEL_CONTEXT_MAP = {
-    'gemini-2.5-pro': 2097152,
-    'gemini-2.5-flash': 1048576,
+    "gemini-2.5-pro": 2097152,
+    "gemini-2.5-flash": 1048576,
+    "gemini-3.1-pro-preview": 2097152,
+    "gemini-3.1-pro": 2097152,
+    "gemini-3-flash-preview": 1048576,
+    "gemini-3-flash": 1048576,
   };
-  return MODEL_CONTEXT_MAP[model] || 1048576;
+  
+  if (MODEL_CONTEXT_MAP[model]) return MODEL_CONTEXT_MAP[model];
+
+  // Logic-based fuzzy matching for newer versions
+  if (model.includes("pro")) return 2097152;
+  if (model.includes("flash")) return 1048576;
+  if (model.startsWith("gemini-3")) return 2097152; // Default for 3.x is Pro window
+
+  return 1048576; // Safe fallback
 }
 
 function getCompactBucketsToTrigger(lastCompactBucket, percent, buckets = [20, 30, 40, 50]) {
