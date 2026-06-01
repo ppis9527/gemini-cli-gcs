@@ -4,12 +4,31 @@ const path = require('path');
 const { exec, execSync } = require('child_process');
 
 function resolveMaxContext(modelName) {
-  const model = (modelName || '').toLowerCase();
+  const model = (modelName || '').toLowerCase().replace(/\s+/g, '-');
   const MODEL_CONTEXT_MAP = {
     'gemini-2.5-pro': 2097152,
     'gemini-2.5-flash': 1048576,
+    'gemini-3.5-flash': 1048576,
+    'gemini-3.1-pro': 1048576,
+    'claude-sonnet-4.6': 1048576,
+    'claude-opus-4.6': 1048576,
+    'gpt-oss-120b': 131072
   };
-  return MODEL_CONTEXT_MAP[model] || 1048576;
+
+  if (MODEL_CONTEXT_MAP[model]) return MODEL_CONTEXT_MAP[model];
+
+  if (model.includes('gpt-oss-120b')) return 131072;
+  if (model.includes('gemini-2.5-pro')) return 2097152;
+  if (model.includes('gemini-3.5-flash')) return 1048576;
+  if (model.includes('gemini-3.1-pro')) return 1048576;
+  if (model.includes('claude-sonnet-4.6')) return 1048576;
+  if (model.includes('claude-opus-4.6')) return 1048576;
+
+  if (model.includes('pro')) return 2097152;
+  if (model.includes('flash')) return 1048576;
+  if (model.includes('sonnet') || model.includes('opus')) return 1048576;
+
+  return 1048576;
 }
 
 function getCompactBucketsToTrigger(lastCompactBucket, percent, buckets = [20, 30, 40, 50]) {
