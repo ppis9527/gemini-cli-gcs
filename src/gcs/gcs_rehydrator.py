@@ -20,19 +20,26 @@ class GCSRehydrator:
         # Initialization is now safely handled entirely within __new__'s lock
         pass
 
+        rel_target = os.path.relpath(real_target, self.checkpoint.get("project_root", os.getcwd()))
     def _load_checkpoint(self):
         if os.path.exists(self.checkpoint_path):
             try:
+                self._last_mtime = os.path.getmtime(self.checkpoint_path)
                 with open(self.checkpoint_path, "r") as f:
                     return json.load(f)
             except Exception:
                 return {}
         return {}
 
+    def _ensure_fresh(self):
+        if os.path.exists(self.checkpoint_path):
+            current_mtime = os.path.getmtime(self.checkpoint_path)
+            if hasattr(self, "_last_mtime") and current_mtime > self._last_mtime:
+                self.checkpoint = self._load_checkpoint()
+
     def is_skeletonized(self, file_path):
+        self._ensure_fresh()
         # Normalize to realpath for symlink safety
-        real_target = os.path.realpath(file_path)
-        rel_target = os.path.relpath(real_target, self.checkpoint.get("project_root", os.getcwd()))
         return rel_target in self.checkpoint.get("skeletons", {})
 
     def rehydrate_block(self, file_path, symbol_name):

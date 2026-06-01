@@ -20,7 +20,3 @@ fi
 # 3. Install core packages
 source "$VENV_PATH/bin/activate"
 pip install --quiet tree-sitter tree-sitter-python tree-sitter-javascript tree-sitter-typescript
-echo "GCS: tree-sitter and language bindings installed."
-
-# 4. Success message
-echo "GCS: Setup complete. GCS Distiller ready."

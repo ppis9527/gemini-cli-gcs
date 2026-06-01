@@ -47,7 +47,7 @@ class GCSHealthReport:
 
     def _process_file(self, abs_path, rel_path):
         try:
-            with open(abs_path, "r") as f:
+            with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
                 content = f.read()
             
             orig_size = len(content.encode("utf-8"))

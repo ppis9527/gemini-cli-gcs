@@ -112,17 +112,17 @@ class GCSDistiller:
             freq[c] = freq.get(c, 0) + 1
         length = len(s)
         if length == 0: return 0
-        return -sum((f/length) * log2(f/length) for f in freq.values())
-
+        func_types = ("function_definition", "function_declaration", "method_definition", "arrow_function", "generator_function_declaration")
     def _scrub_secrets(self, node, edits, source_code):
+        redacted = False
         if node.type in ("string", "template_string", "string_literal"):
             try:
                 text = source_code.encode("utf-8")[node.start_byte:node.end_byte].decode("utf-8")
-            except Exception: return
+            except Exception: return False
             for pattern in SECRET_PATTERNS:
                 if re.search(pattern, text):
                     edits.append((node.start_byte, node.end_byte, '"[REDACTED]"'))
-                    return
+                    return True
             parent = node.parent
             if parent and parent.type in ("assignment", "variable_declarator", "pair"):
                 context_text = ""
@@ -133,13 +133,17 @@ class GCSDistiller:
                 for pattern in SECRET_PATTERNS:
                     if re.search(pattern, context_text):
                         edits.append((node.start_byte, node.end_byte, '"[REDACTED]"'))
-                        return
+                        return True
             inner_text = text.strip("\"' ")
             if len(inner_text) > 32 and self._shannon_entropy(inner_text) > 4.5:
                 edits.append((node.start_byte, node.end_byte, '"[REDACTED_HIGH_ENTROPY]"'))
+                return True
+        return False
 
     def _find_blocks_to_skeletonize(self, node, edits, ext, file_uri, source_code, source_map):
-        self._scrub_secrets(node, edits, source_code)
+        if self._scrub_secrets(node, edits, source_code):
+            # If secret scrubbed, we don't map this block as a skeleton candidate to prevent offset leakage
+            return
         func_types = ("function_definition", "function_declaration", "method_definition", "arrow_function", "generator_function_declaration")
         if node.type in func_types:
             symbol_name = "anonymous"

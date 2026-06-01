@@ -16,7 +16,7 @@ class SSTBench:
         
         # Step 2: Distillation
         start_time = time.perf_counter()
-        distilled_code = self.distiller.skeletonize(file_path, original_code)
+        distilled_code, _ = self.distiller.skeletonize(file_path, original_code)
         distillation_time = (time.perf_counter() - start_time) * 1000  # ms
         
         distilled_size = len(distilled_code.encode("utf-8"))

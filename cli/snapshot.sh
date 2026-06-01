@@ -4,9 +4,21 @@
 # Usage: /snapshot "Summary content here..."
 
 TIMESTAMP=$(date +"%Y-%m-%d")
-TITLE="Memory Snapshot - $TIMESTAMP"
-OUTPUT_DIR="/Users/yj/我的雲端硬碟/OpenClaw Agents/01_Obsidian/09_memory-snapshot"
-FILE_PATH="$OUTPUT_DIR/${TIMESTAMP}_Memory_Summary.md"
+HM=$(date +"%H%M")
+TITLE="Memory Snapshot - $TIMESTAMP $HM"
+
+# GCS Workspace Integration
+PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+DEFAULT_OBSIDIAN_DIR="$HOME/gdrive/01_Obsidian/09_memory-snapshot"
+
+# Fallback to project-local snapshots if gdrive not found
+if [ -d "$DEFAULT_OBSIDIAN_DIR" ]; then
+    OUTPUT_DIR="$DEFAULT_OBSIDIAN_DIR"
+else
+    OUTPUT_DIR="$PROJECT_ROOT/.gemini/snapshots"
+fi
+
+FILE_PATH="$OUTPUT_DIR/${TIMESTAMP}_${HM}_Memory_Summary.md"
 
 SUMMARY_CONTENT=$1
 if [ -z "$SUMMARY_CONTENT" ]; then
@@ -15,7 +27,7 @@ fi
 
 mkdir -p "$OUTPUT_DIR"
 
-cat << EOF > "$FILE_PATH"
+cat << EOO > "$FILE_PATH"
 ---
 title: $TITLE
 date: $TIMESTAMP
@@ -40,18 +52,18 @@ $SUMMARY_CONTENT
 ## Implementation Details
 - (To be filled by agent)
 
-## Review Outcome (Gemini 3.5 Flash)
+## Review Outcome (Gemini 2.0 Thinking)
 - (To be filled by agent)
 
 ## Verification
 - (To be filled by agent)
 
 ## Git & Storage Outcome
-- **代碼位置**: $(pwd)
-- **雲端報表**: $FILE_PATH
+- **代碼位置**: $PROJECT_ROOT
+- **存檔路徑**: $FILE_PATH
 
 ---
-*本快照由 OpenClaw Agents 手動生成，記錄技術演進。*
-EOF
+*本快照由 GCS Guardian v1.24.0 手動生成，記錄技術演進。*
+EOO
 
 echo "Snapshot generated at: $FILE_PATH"

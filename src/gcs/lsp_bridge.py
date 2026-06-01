@@ -35,18 +35,20 @@ class LSPBridge:
             "jsonrpc": "2.0", "id": 0, "method": "initialize",
             "params": {"processId": os.getpid(), "rootUri": self.root_uri, "capabilities": {}}
         })
-
+    def _read_loop(self):
     def _send(self, payload):
-        if not self.process or not self.process.stdin: return
+        if not self.process or not self.process.stdin: 
+            if self.is_running: self.start() # Attempt restart if should be running
+            return
         body = json.dumps(payload).encode("utf-8")
         header = f"Content-Length: {len(body)}\r\n\r\n".encode("utf-8")
         with self.lock:
             try:
                 self.process.stdin.write(header + body)
                 self.process.stdin.flush()
-            except BrokenPipeError: self.is_running = False
-
-    def _read_loop(self):
+            except (BrokenPipeError, OSError):
+                self.is_running = False
+                # Future: implement backoff here if needed
         while self.is_running and self.process and self.process.stdout:
             try:
                 line = self.process.stdout.readline().decode("utf-8")
@@ -74,14 +76,18 @@ class LSPBridge:
         })
 
         start = time.time()
-        while time.time() - start < LSP_RESPONSE_TIMEOUT:
+        try:
+            while time.time() - start < LSP_RESPONSE_TIMEOUT:
+                with self.lock:
+                    if msg_id in self.responses:
+                        res = self.responses.pop(msg_id)
+                        result = res.get("result")
+                        self._update_cache(cache_key, result)
+                        return result, "L2", 1
+                time.sleep(0.01)
+        finally:
             with self.lock:
-                if msg_id in self.responses:
-                    res = self.responses.pop(msg_id)
-                    result = res.get("result")
-                    self._update_cache(cache_key, result)
-                    return result, "L2", 1
-            time.sleep(0.01)
+                if msg_id in self.responses: self.responses.pop(msg_id, None)
         return None, "MISS", 0
 
     def _update_cache(self, key, result):

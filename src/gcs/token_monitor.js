@@ -38,7 +38,7 @@ function main() {
   const percentUsed = (ratio * 100).toFixed(1);
 
   const projectRoot = findProjectRoot(process.cwd()) || (fs.existsSync(path.join(process.cwd(), 'src', 'gcs', 'gcs_orchestrator.py')) ? process.cwd() : null);
-  const globalStatusPath = path.join(process.env.HOME, '.gemini/gcs-guardian/tmux_status');
+  const globalStatusPath = path.join(process.env.HOME, '.gemini/gemini-cli-gcs/tmux_status');
   const flashIcon = (projectRoot && fs.existsSync(path.join(projectRoot, '.gemini', 'gcs.pending'))) ? " ⚡" : "";
 
   try {
@@ -46,7 +46,7 @@ function main() {
     fs.writeFileSync(globalStatusPath, `GCS: ${percentUsed}%${flashIcon}`);
   } catch(e) {}
 
-  const STATE_DIR = projectRoot ? path.join(projectRoot, '.gemini') : path.join(process.env.HOME, '.gemini/gcs-guardian/tmp_state');
+  const STATE_DIR = projectRoot ? path.join(projectRoot, '.gemini') : path.join(process.env.HOME, '.gemini/gemini-cli-gcs/tmp_state');
   if (!fs.existsSync(STATE_DIR)) fs.mkdirSync(STATE_DIR, { recursive: true });
 
   const STATE_FILE = path.join(STATE_DIR, 'monitor_state.json');
@@ -73,12 +73,17 @@ function main() {
       exec(`tmux display-message '🚨 [GCS] Background YOLO distillation triggered!'`);
       fs.writeFileSync(globalStatusPath, `[GCS: ${percentUsed}% ⚡ YOLO]`);
     } catch(e) {}
-    const localPython = path.join(projectRoot || "", '.gemini', 'gcs-venv', 'bin', 'python3');
-    const extensionPython = path.join(process.env.HOME, '.gemini/extensions/gcs-guardian/venv/bin/python3');
-    const pythonPath = fs.existsSync(localPython) ? localPython : (fs.existsSync(extensionPython) ? extensionPython : 'python3');
+    const venvPaths = [
+      process.env.VIRTUAL_ENV ? path.join(process.env.VIRTUAL_ENV, "bin", "python3") : null,
+      path.join(projectRoot || "", ".gemini", "gcs-venv", "bin", "python3"),
+      path.join(projectRoot || "", ".venv", "bin", "python3"),
+      path.join(projectRoot || "", "venv", "bin", "python3"),
+      path.join(process.env.HOME, ".gemini/extensions/gemini-cli-gcs/venv/bin/python3")
+    ].filter(p => p && fs.existsSync(p));
+    const pythonPath = venvPaths.length > 0 ? venvPaths[0] : "python3";
 
     const localOrchestrator = projectRoot ? path.join(projectRoot, 'src', 'gcs', 'gcs_orchestrator.py') : '';
-    const extensionOrchestrator = path.join(process.env.HOME, '.gemini/extensions/gcs-guardian/scripts/gcs_orchestrator.py');
+    const extensionOrchestrator = path.join(process.env.HOME, '.gemini/extensions/gemini-cli-gcs/src/gcs/gcs_orchestrator.py');
     const orchestratorPath = fs.existsSync(localOrchestrator) ? localOrchestrator : extensionOrchestrator;
     const preflightPath = projectRoot ? path.join(projectRoot, 'src', 'gcs', 'gcs_preflight.py') : '';
 
@@ -109,14 +114,22 @@ function main() {
     lastCompactBucket = bucket;
   }
 
-  fs.writeFileSync(STATE_FILE, JSON.stringify({
+  const statePayload = JSON.stringify({
     last_notified_step: Math.max(lastStep, currentStep),
     last_compact_bucket: lastCompactBucket,
     prompt_tokens: promptTokens,
     max_context: MAX_CONTEXT,
     model_name: modelName,
     timestamp: new Date().toISOString()
-  }));
+  }, null, 2);
+  const TEMP_STATE_FILE = STATE_FILE + ".tmp";
+  try {
+    fs.writeFileSync(TEMP_STATE_FILE, statePayload);
+    fs.renameSync(TEMP_STATE_FILE, STATE_FILE);
+  } catch (e) {
+    process.stderr.write(`\n[WARN] Failed to save state atomically: ${e.message}\n`);
+    try { fs.writeFileSync(STATE_FILE, statePayload); } catch(e2) {}
+  }
   } catch(e) {
     process.stderr.write(`\n[ERROR] token_monitor failed: ${e && e.stack ? e.stack : e}\n`);
   }

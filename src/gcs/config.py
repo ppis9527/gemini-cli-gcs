@@ -28,19 +28,41 @@ LEAN_MODE_FIDELITY = 0
 SECRET_PATTERNS = [
     r"(?i)(api[_-]?key|token|secret|password|credential)",
     r"-----BEGIN .* PRIVATE KEY-----",
+    r"sk-[a-zA-Z0-9]{20,}",
+    r"ghp_[a-zA-Z0-9]{36}",
+    r"AIza[0-9A-Za-z\\-_]{35}",
+        "notify_state": dot_gemini / "gcs_notify.state",
+import json
+
+# Advanced Secret Scrubbing patterns (Phase 2)
+SECRET_PATTERNS = [
+    r"(?i)(api[_-]?key|token|secret|password|credential)",
+    r"-----BEGIN .* PRIVATE KEY-----",
+    r"sk-[a-zA-Z0-9]{20,}",
+    r"ghp_[a-zA-Z0-9]{36}",
+    r"AIza[0-9A-Za-z\\-_]{35}",
+    r"xox[baprs]-[0-9]{12}-[0-9]{12}-[a-zA-Z0-9]{24}",
 ]
+
+def load_project_config(project_root: str):
+    """Load local overrides from .gemini/gcs_config.json if it exists."""
+    global SECRET_PATTERNS
+    config_file = os.path.join(project_root, ".gemini", "gcs_config.json")
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, "r") as f:
+                cfg = json.load(f)
+                if "SECRET_PATTERNS" in cfg:
+                    SECRET_PATTERNS.extend(cfg["SECRET_PATTERNS"])
+                    # Deduplicate
+                    SECRET_PATTERNS = list(set(SECRET_PATTERNS))
+        except Exception:
+            pass
 
 # Paths (derived from project root)
 def get_paths(project_root: str) -> dict:
+    load_project_config(project_root)
     root = Path(project_root)
-    dot_gemini = root / ".gemini"
-    return {
-        "dot_gemini": dot_gemini,
-        "checkpoint": dot_gemini / "checkpoint.json",
-        "lock": dot_gemini / "gcs.lock",
-        "log": dot_gemini / "gcs.log",
-        "pending": dot_gemini / "gcs.pending",
-        "notify_state": dot_gemini / "gcs_notify.state",
     }
 
-__version__ = "1.23.0"
+__version__ = "1.25.0"
