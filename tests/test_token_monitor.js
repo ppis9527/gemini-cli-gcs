@@ -7,4 +7,9 @@ assert.deepStrictEqual(mod.getCompactBucketsToTrigger(40, 45, [20,30,40,50]), []
 assert.strictEqual(mod.resolveMaxContext('gemini-2.5-pro'), 2097152);
 assert.strictEqual(mod.resolveMaxContext('gemini-2.5-flash'), 1048576);
 assert.strictEqual(mod.resolveMaxContext('unknown-model'), 1048576);
+const paths = mod.getSessionRuntimePaths('$1');
+assert.ok(paths.stateFile.endsWith('/.gemini/gcs-guardian/sessions/$1/monitor_state.json'));
+assert.ok(paths.statusFile.endsWith('/.gemini/gcs-guardian/sessions/$1/tmux_status'));
+assert.strictEqual(mod.shouldResetSession(12000, 8000), true);
+assert.strictEqual(mod.shouldResetSession(8000, 12000), false);
 console.log('ok');

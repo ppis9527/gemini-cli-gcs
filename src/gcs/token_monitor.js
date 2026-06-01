@@ -16,6 +16,36 @@ function getCompactBucketsToTrigger(lastCompactBucket, percent, buckets = [20, 3
   return buckets.filter((b) => b > lastCompactBucket && b <= percent);
 }
 
+function resolveTmuxSessionId() {
+  try {
+    if (!process.env.TMUX && !process.env.TMUX_PANE) return 'no-tmux';
+    const sessionId = execSync("tmux display-message -p -F '#{session_id}'", {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    return sessionId || 'no-tmux';
+  } catch (e) {
+    return 'no-tmux';
+  }
+}
+
+function getSessionRuntimePaths(sessionId) {
+  const runtimeRoot = path.join(process.env.HOME, '.gemini', 'gcs-guardian');
+  const sessionRoot = path.join(runtimeRoot, 'sessions', sessionId || 'no-tmux');
+  return {
+    runtimeRoot,
+    sessionRoot,
+    stateFile: path.join(sessionRoot, 'monitor_state.json'),
+    statusFile: path.join(sessionRoot, 'tmux_status'),
+  };
+}
+
+function shouldResetSession(previousPromptTokens, currentPromptTokens) {
+  const previous = Number(previousPromptTokens || 0);
+  const current = Number(currentPromptTokens || 0);
+  return previous > 0 && current > 0 && current < previous;
+}
+
 function main() {
   try {
   const input = JSON.parse(fs.readFileSync(0, 'utf-8'));
@@ -38,18 +68,19 @@ function main() {
   const percentUsed = (ratio * 100).toFixed(1);
 
   const projectRoot = findProjectRoot(process.cwd()) || (fs.existsSync(path.join(process.cwd(), 'src', 'gcs', 'gcs_orchestrator.py')) ? process.cwd() : null);
-  const globalStatusPath = path.join(process.env.HOME, '.gemini/gcs-guardian/tmux_status');
   const flashIcon = (projectRoot && fs.existsSync(path.join(projectRoot, '.gemini', 'gcs.pending'))) ? " ⚡" : "";
+  const sessionId = resolveTmuxSessionId();
+  const sessionPaths = getSessionRuntimePaths(sessionId);
+  const globalStatusPath = sessionPaths.statusFile;
 
   try {
-    fs.mkdirSync(path.dirname(globalStatusPath), { recursive: true });
+    fs.mkdirSync(sessionPaths.sessionRoot, { recursive: true });
     fs.writeFileSync(globalStatusPath, `GCS: ${percentUsed}%${flashIcon}`);
   } catch(e) {}
 
-  const STATE_DIR = projectRoot ? path.join(projectRoot, '.gemini') : path.join(process.env.HOME, '.gemini/gcs-guardian/tmp_state');
-  if (!fs.existsSync(STATE_DIR)) fs.mkdirSync(STATE_DIR, { recursive: true });
+  if (!fs.existsSync(sessionPaths.sessionRoot)) fs.mkdirSync(sessionPaths.sessionRoot, { recursive: true });
 
-  const STATE_FILE = path.join(STATE_DIR, 'monitor_state.json');
+  const STATE_FILE = sessionPaths.stateFile;
   let lastStep = 0;
   let lastCompactBucket = 0;
   if (fs.existsSync(STATE_FILE)) {
@@ -57,6 +88,10 @@ function main() {
       const state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
       lastStep = state.last_notified_step || 0;
       lastCompactBucket = state.last_compact_bucket || 0;
+      if (shouldResetSession(state.prompt_tokens, promptTokens)) {
+        lastStep = 0;
+        lastCompactBucket = 0;
+      }
     } catch(e) {}
   }
   const currentStep = Math.floor(ratio / 0.05);
@@ -144,6 +179,9 @@ if (require.main === module) {
 module.exports = {
   resolveMaxContext,
   getCompactBucketsToTrigger,
+  resolveTmuxSessionId,
+  getSessionRuntimePaths,
+  shouldResetSession,
   findProjectRoot,
   main,
 };

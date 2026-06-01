@@ -43,6 +43,7 @@ mkdir -p ~/.gemini/extensions/gcs-guardian/scripts
 
 # 2. 將核心腳本複製過去
 cp src/gcs/token_monitor.js ~/.gemini/extensions/gcs-guardian/scripts/
+cp src/gcs/tmux_status.sh ~/.gemini/extensions/gcs-guardian/scripts/
 cp src/gcs/gcs_init.sh ~/.gemini/extensions/gcs-guardian/scripts/
 cp src/gcs/gcs_orchestrator.py ~/.gemini/extensions/gcs-guardian/scripts/
 cp src/gcs/gcs_distiller.py ~/.gemini/extensions/gcs-guardian/scripts/
@@ -54,6 +55,7 @@ ln -s ~/.gemini/extensions/gcs-guardian/.gemini/gcs-venv ~/.gemini/extensions/gc
 # 4. 給予腳本可執行權限
 chmod +x ~/.gemini/extensions/gcs-guardian/scripts/gcs_init.sh
 chmod +x ~/.gemini/extensions/gcs-guardian/scripts/token_monitor.js
+chmod +x ~/.gemini/extensions/gcs-guardian/scripts/tmux_status.sh
 ```
 
 ---
@@ -112,11 +114,11 @@ chmod +x ~/.gemini/extensions/gcs-guardian/scripts/token_monitor.js
 ---
 
 ### 6. 整合 Tmux 狀態欄
-編輯您電腦的 `~/.tmux.conf`，加入我們優化後的紫色高對比狀態欄：
+編輯您電腦的 `~/.tmux.conf`，加入會依照目前 tmux session 自動切換的狀態欄：
 
 ```tmux
 # GCS Guardian — 下方狀態列即時顯示 context 使用率
-set -g status-right "#[fg=magenta]#(cat ~/.gemini/gcs-guardian/tmux_status 2>/dev/null || echo '[GCS: --]')#[default] | %H:%M "
+set -g status-right "#[fg=magenta]#($HOME/.gemini/extensions/gcs-guardian/scripts/tmux_status.sh '#{session_id}')#[default] | %H:%M "
 set -g status-interval 3
 ```
 

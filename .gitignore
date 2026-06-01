@@ -9,7 +9,9 @@ venv/
 
 # Local runtime state
 .gemini/*.log
+.gemini/*.log.old
 .gemini/*.lock
 .gemini/*.pending
+.gemini/checkpoint.json
 .gemini/monitor_state.json
 .gemini/gcs_notify.state

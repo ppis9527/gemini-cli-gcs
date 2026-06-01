@@ -1,9 +1,12 @@
 #!/bin/bash
 # GCS Guardian SessionStart Hook (Hardened v1.5)
 
-# Reset tmux status unconditionally on new session/clear
-mkdir -p ~/.gemini/gcs-guardian/
-echo "[GCS: 0%]" > ~/.gemini/gcs-guardian/tmux_status
+SESSION_ID=$(tmux display-message -p -F '#{session_id}' 2>/dev/null || echo "no-tmux")
+SESSION_DIR="$HOME/.gemini/gcs-guardian/sessions/$SESSION_ID"
+
+# Reset tmux status for the active tmux session
+mkdir -p "$SESSION_DIR"
+echo "[GCS: 0%]" > "$SESSION_DIR/tmux_status"
 
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$PROJECT_ROOT" ]; then
@@ -50,4 +53,3 @@ if [ -f "$LOG" ] && [ $(wc -c <"$LOG") -gt 5242880 ]; then
     mv "$LOG" "$LOG.old"
     touch "$LOG"
 fi
-
