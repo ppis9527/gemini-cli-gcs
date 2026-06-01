@@ -4,27 +4,37 @@ const path = require('path');
 const { exec, execSync } = require('child_process');
 
 function resolveMaxContext(modelName) {
-  const model = (modelName || '')
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/-\(([^)]*)\)$/g, '');
+  const model = normalizeModelName(modelName);
   const MODEL_CONTEXT_MAP = {
     'gpt-oss-120b': 131072,
   };
-  if (MODEL_CONTEXT_MAP[model]) return MODEL_CONTEXT_MAP[model];
+  if (model.startsWith('gpt-oss-120b')) return MODEL_CONTEXT_MAP['gpt-oss-120b'];
 
-  if (model.includes('claude') || model.includes('sonnet') || model.includes('opus')) {
+  if (hasToken(model, 'claude') || hasToken(model, 'sonnet') || hasToken(model, 'opus')) {
     return 200000;
   }
 
-  if (model.includes('gemini')) {
-    return model.includes('pro') ? 2097152 : 1048576;
+  if (hasToken(model, 'gemini')) {
+    return hasToken(model, 'pro') ? 2097152 : 1048576;
   }
 
-  if (model.includes('flash')) return 1048576;
-  if (model.includes('pro')) return 2097152;
+  if (hasToken(model, 'flash')) return 1048576;
+  if (hasToken(model, 'pro')) return 2097152;
 
   return 1048576;
+}
+
+function normalizeModelName(modelName) {
+  return (modelName || '')
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function hasToken(model, token) {
+  return new RegExp(`(^|-)${token}(-|$)`).test(model);
 }
 
 function getCompactBucketsToTrigger(lastCompactBucket, percent, buckets = [20, 30, 40, 50]) {

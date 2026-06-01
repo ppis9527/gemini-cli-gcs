@@ -6,11 +6,14 @@ assert.deepStrictEqual(mod.getCompactBucketsToTrigger(20, 45, [20,30,40,50]), [3
 assert.deepStrictEqual(mod.getCompactBucketsToTrigger(40, 45, [20,30,40,50]), []);
 assert.strictEqual(mod.resolveMaxContext('Gemini 3.5 Flash (Low)'), 1048576);
 assert.strictEqual(mod.resolveMaxContext('Gemini 3.5 Flash (High)'), 1048576);
+assert.strictEqual(mod.resolveMaxContext('Gemini_3.5_Flash [Low]'), 1048576);
 assert.strictEqual(mod.resolveMaxContext('Gemini 3.1 Pro (Low)'), 2097152);
 assert.strictEqual(mod.resolveMaxContext('Gemini 3.1 Pro (High)'), 2097152);
+assert.strictEqual(mod.resolveMaxContext('Gemini-3.1-Pro/High'), 2097152);
 assert.strictEqual(mod.resolveMaxContext('Claude Sonnet 4.6 (Thinking)'), 200000);
 assert.strictEqual(mod.resolveMaxContext('Claude Opus 4.6 (Thinking)'), 200000);
 assert.strictEqual(mod.resolveMaxContext('GPT-OSS 120B (Medium)'), 131072);
+assert.strictEqual(mod.resolveMaxContext('GPT OSS 120B, Medium'), 131072);
 assert.strictEqual(mod.resolveMaxContext('unknown-model'), 1048576);
 const paths = mod.getSessionRuntimePaths('$1');
 assert.ok(paths.stateFile.endsWith('/.gemini/gcs-guardian/sessions/$1/monitor_state.json'));
