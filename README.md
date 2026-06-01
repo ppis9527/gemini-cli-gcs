@@ -31,6 +31,11 @@ This system is designed to be installed as a Gemini CLI Global Extension.
 3. Install dependencies into that virtualenv: `.gemini/gcs-venv/bin/python3 -m pip install -r requirements.txt`.
 4. (Optional) run preflight check: `.gemini/gcs-venv/bin/python3 src/gcs/gcs_preflight.py`.
 5. Register the hooks in your `~/.gemini/settings.json`.
+6. Configure tmux to read the session-aware status script:
+   ```tmux
+   set -g status-right "#($HOME/.gemini/extensions/gcs-guardian/scripts/tmux_status.sh '#{session_id}')"
+   ```
+   If you already have a longer `status-right`, append the script to your existing chain and keep `status-interval` enabled.
 
 ## 🧪 Quick Test
 
@@ -49,13 +54,19 @@ This system is designed to be installed as a Gemini CLI Global Extension.
 
 ## 📜 Specification
 
-For deep technical details, see [GCS_GUARDIAN.md](./GCS_GUARDIAN.md) and the [Technical Whitepaper](./docs/gcs/GCS-Guardian-Ultimate-Whitepaper-v1.24.0.md).
+For deep technical details, see [GCS_GUARDIAN.md](./GCS_GUARDIAN.md) and the [Technical Whitepaper](./docs/gcs/GCS-Guardian-Ultimate-Whitepaper-v1.22.0.md).
 
 ---
-*Created by Gemini 3.1 Pro. v1.24.0 Refined 2026-05-31.*
+*Created by Gemini 3.1 Pro. v1.25.0 Session-Aware 2026-06-01.*
 #gcs #governance #architecture #gemini-cli
 
 ## 📈 Change List
+
+### [2026-06-01] GCS Guardian v1.25.0: Session-Aware Tmux Status and Token Isolation
+- Made `token_monitor.js` session-aware by keying runtime state off tmux `session_id`, so prompt history and trigger buckets no longer bleed across sessions.
+- Added `tmux_status.sh` and updated tmux setup so `status-right` automatically follows the active tmux session.
+- Updated the installation guide and runtime docs to reflect the new session-scoped status files.
+- Added regression coverage for session-reset behavior and runtime path generation.
 
 ### [2026-05-31] GCS Guardian v1.24.0: Reliability & Multi-Threshold Compact
 - Added `requirements.txt` and `gcs_preflight.py` for predictable runtime dependency checks.
