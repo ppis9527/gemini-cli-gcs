@@ -76,6 +76,12 @@ function main() {
   const currentStep = Math.floor(ratio / 0.05);
   const currentPercent = ratio * 100;
 
+  // Session Isolation: Detect drop in tokens (new or cleared session)
+  if (currentStep < lastStep || currentPercent < lastCompactBucket) {
+    lastStep = 0;
+    lastCompactBucket = 0;
+  }
+
   if (currentStep > lastStep) {
     process.stderr.write(`\n📊 [GCS] Context: ${currentStep * 5}% | prompt=${promptTokens.toLocaleString()} | model=${modelName}\n`);
   }
