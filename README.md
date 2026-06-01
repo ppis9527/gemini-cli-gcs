@@ -46,8 +46,10 @@ This system is designed to be installed as a Gemini CLI Global Extension.
 
 - Token source: `usageMetadata.promptTokenCount` (Gemini) or `usage.input_tokens` (Claude/OpenAI-compatible shape).
 - Model context mapping (current defaults):
-  - `gemini-2.5-pro` -> `2097152`
-  - `gemini-2.5-flash` -> `1048576`
+  - Gemini `pro` models -> `2097152`
+  - Gemini non-`pro` models -> `1048576`
+  - Claude `sonnet` / `opus` -> `200000`
+  - `gpt-oss-120b` -> `131072`
   - unknown model -> fallback `1048576`
 - Background compact thresholds: `20%`, `30%`, `40%`, `50%`
 - Catch-up behavior: if usage jumps across multiple thresholds in one step, all missed thresholds are triggered in order.
