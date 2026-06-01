@@ -1,6 +1,6 @@
 # 🛰️ GCS Guardian: Context Governance System (SSOT)
 
-> [!important] GCS 運作指南 (v1.24.0)
+> [!important] GCS 運作指南 (v1.25.0)
 > 本專案為 GCS Guardian 終極治理系統。所有 Context 與對話進度均受 L4 骨架重灌協議保護，嚴格執行 20% 閾值蒸餾監控。
 
 ---
@@ -30,7 +30,7 @@
 ## 📊 治理指標與閾值 (Context Governance Mandate)
 
 ### ♻️ GCS 生命週期流程 (20% 閾值)
-1. **偵測 (Detection)**: 當 `token_monitor.js` 偵測到 Token 使用率達到 **20% (預設 400k / 2M)** 時，自動啟動背景蒸餾。
+1. **偵測 (Detection)**: 當 `token_monitor.js` 偵測到 Token 使用率達到 **20%** 時，自動啟動背景蒸餾。實際門檻依模型 context window 動態換算，例如 1M 模型約為 200k、2M 模型約為 400k。
 2. **預警 (Alert)**: 當飽和度達到 80% 時，顯示通知要求使用者執行 `/clear`。
 3. **續行 (Resume)**: 使用者輸入 `/clear` 後，`gcs_init.sh` 讀取 `checkpoint.json` 重灌 L4 骨架並恢復任務狀態。
 
@@ -41,6 +41,6 @@
 - 所有 Markdown (.md) 檔案必須包含與內容相關的主題標籤 (例如 #gcs #architecture)。
 
 ---
-*Updated to v1.24.0. GCS Guardian Ultimate SSOT.*
+*Updated to v1.25.0. GCS Guardian Ultimate SSOT.*
 
 #2026-05-31 #gcs #architecture #ssot
