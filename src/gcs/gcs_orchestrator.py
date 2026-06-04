@@ -10,9 +10,25 @@ if _src_root not in sys.path:
 import json
 import time
 import subprocess
-import fcntl
+import platform
 import zlib
 import base64
+
+# Universal Atomic File Lock Bridging
+if platform.system() != "Windows":
+    import fcntl
+    def acquire_lock(f):
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    def release_lock(f):
+        fcntl.flock(f, fcntl.LOCK_UN)
+else:
+    import msvcrt
+    def acquire_lock(f):
+        f.seek(0)
+        msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+    def release_lock(f):
+        f.seek(0)
+        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
 
 from gcs.gcs_distiller import GCSDistiller
 from gcs.config import get_paths, THRESHOLD_TOKENS, SMALL_FILE_THRESHOLD, __version__
@@ -89,14 +105,15 @@ class GCSOrchestrator:
             self._log("Git index locked, postponing.")
             return False
         
+        lock_f = None
         try:
-            lock_f = open(self.lock_path, "a")
-            fcntl.flock(lock_f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except (IOError, OSError):
-            self._log("Distillation in progress, skipping.")
-            return False
-            
-        try:
+            try:
+                lock_f = open(self.lock_path, "a")
+                acquire_lock(lock_f)
+            except (IOError, OSError):
+                self._log("Distillation in progress, skipping.")
+                return False
+                
             self.cleanup_stale_entries()
             self._log(f"Starting auto-distillation for {len(active_files)} files.")
             start_time = time.perf_counter()
@@ -152,13 +169,21 @@ class GCSOrchestrator:
                 "timestamp": time.time(),
                 "resume_task": "GCS_GOVERNANCE_AUTO"
             }
-            with open(self.pending_path, "w") as f:
+            # Atomic write for pending state
+            import tempfile
+            fd, temp_pending = tempfile.mkstemp(dir=os.path.dirname(self.pending_path), text=True)
+            with os.fdopen(fd, 'w') as f:
                 json.dump(state, f)
+            os.replace(temp_pending, self.pending_path)
 
             return True
         finally:
-            fcntl.flock(lock_f, fcntl.LOCK_UN)
-            lock_f.close()
+            if lock_f:
+                try:
+                    release_lock(lock_f)
+                except Exception:
+                    pass
+                lock_f.close()
 
 def main():
     import argparse

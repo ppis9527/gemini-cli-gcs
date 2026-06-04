@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { exec, execSync } = require('child_process');
+const IS_WIN = process.platform === "win32";
 
 function resolveMaxContext(modelName) {
   const model = normalizeModelName(modelName);
@@ -98,10 +100,37 @@ function main() {
   const sessionPaths = getSessionRuntimePaths(sessionId);
   const globalStatusPath = sessionPaths.statusFile;
 
-  try {
-    fs.mkdirSync(sessionPaths.sessionRoot, { recursive: true });
-    fs.writeFileSync(globalStatusPath, `GCS: ${percentUsed}%${flashIcon}`);
-  } catch(e) {}
+  const HOME = os.homedir();
+  let gdriveStatusPath;
+  if (IS_WIN) {
+    gdriveStatusPath = "G:\\My Drive\\MyMDs\\System status\\gcert\\.remote_gcs_status";
+  } else if (process.platform === "darwin") {
+    const cloudStorageDir = path.join(HOME, "Library/CloudStorage");
+    let gdriveDir = "GoogleDrive-yaojenliu@google.com"; // Fallback default
+    try {
+      if (fs.existsSync(cloudStorageDir)) {
+        const folders = fs.readdirSync(cloudStorageDir);
+        const found = folders.find(f => f.startsWith("GoogleDrive-"));
+        if (found) gdriveDir = found;
+      }
+    } catch(e) {}
+    gdriveStatusPath = path.join(cloudStorageDir, gdriveDir, "My Drive/MyMDs/System status/gcert/.remote_gcs_status");
+  } else {
+    gdriveStatusPath = path.join(HOME, "DriveFileStream/My Drive/MyMDs/System status/gcert/.remote_gcs_status");
+  }
+
+  function writeStatus(text) {
+    try {
+      fs.mkdirSync(sessionPaths.sessionRoot, { recursive: true });
+      fs.writeFileSync(globalStatusPath, text);
+    } catch(e) {}
+    try {
+      fs.mkdirSync(path.dirname(gdriveStatusPath), { recursive: true });
+      fs.writeFileSync(gdriveStatusPath, text);
+    } catch(e) {}
+  }
+
+  writeStatus(`GCS: ${percentUsed}%${flashIcon}`);
 
   if (!fs.existsSync(sessionPaths.sessionRoot)) fs.mkdirSync(sessionPaths.sessionRoot, { recursive: true });
 
@@ -130,12 +159,16 @@ function main() {
   for (const bucket of pendingCompactBuckets) {
     process.stderr.write(`\n🚨 [GCS] ${bucket}% threshold reached. Background compact triggered.\n`);
     try {
-      exec(`tmux display-message '🚨 [GCS] Background YOLO distillation triggered!'`);
-      fs.writeFileSync(globalStatusPath, `[GCS: ${percentUsed}% ⚡ YOLO]`);
+      exec(`tmux display-message '🚨 [GCS] Background YOLO distillation triggered!'`, () => {});
+      writeStatus(`[GCS: ${percentUsed}% ⚡ YOLO]`);
     } catch(e) {}
-    const localPython = path.join(projectRoot || "", '.gemini', 'gcs-venv', 'bin', 'python3');
-    const extensionPython = path.join(process.env.HOME, '.gemini/extensions/gcs-guardian/venv/bin/python3');
-    const pythonPath = fs.existsSync(localPython) ? localPython : (fs.existsSync(extensionPython) ? extensionPython : 'python3');
+    const localPython = IS_WIN
+      ? path.join(projectRoot || "", '.gemini', 'gcs-venv', 'Scripts', 'python.exe')
+      : path.join(projectRoot || "", '.gemini', 'gcs-venv', 'bin', 'python3');
+    const extensionPython = IS_WIN
+      ? path.join(process.env.USERPROFILE || process.env.HOME, '.gemini/extensions/gcs-guardian/venv/Scripts/python.exe')
+      : path.join(process.env.HOME, '.gemini/extensions/gcs-guardian/venv/bin/python3');
+    const pythonPath = fs.existsSync(localPython) ? localPython : (fs.existsSync(extensionPython) ? extensionPython : (IS_WIN ? 'python' : 'python3'));
 
     const localOrchestrator = projectRoot ? path.join(projectRoot, 'src', 'gcs', 'gcs_orchestrator.py') : '';
     const extensionOrchestrator = path.join(process.env.HOME, '.gemini/extensions/gcs-guardian/scripts/gcs_orchestrator.py');
@@ -158,10 +191,15 @@ function main() {
       }
 
       if (preflightOk) {
-        exec(`"${pythonPath}" "${orchestratorPath}" --background`, (error, stdout, stderr) => {
-          if (stdout) process.stderr.write(stdout);
-          if (stderr) process.stderr.write(stderr);
+        const { spawn: spawnProcess } = require("child_process");
+        const child = spawnProcess(pythonPath, [orchestratorPath, "--tokens", promptTokens.toString(), "--background"], {
+          detached: true,
+          stdio: "ignore"
         });
+        child.on("error", (err) => {
+          process.stderr.write(`\n[ERROR] GCS distillation failed: ${err.message}\n`);
+        });
+        child.unref();
       }
     } else {
       process.stderr.write(`\n[WARN] GCS orchestrator not found: ${orchestratorPath}\n`);
@@ -184,12 +222,14 @@ function main() {
 
 function findProjectRoot(current) {
   let depth = 0;
-  while (current !== '/' && depth < 10) {
+  const rootDir = IS_WIN ? current.split(path.sep)[0] + path.sep : "/";
+  while (depth < 10) {
     if (
       fs.existsSync(path.join(current, '.git')) ||
       fs.existsSync(path.join(current, 'GEMINI.md')) ||
       fs.existsSync(path.join(current, 'src', 'gcs', 'gcs_orchestrator.py'))
     ) return current;
+    if (current === rootDir) break;
     current = path.dirname(current);
     depth++;
   }
