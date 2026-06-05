@@ -1,0 +1,6 @@
+{
+  "name": "custom-session-manager",
+  "description": "Used for Session Compaction, Project Snapshots, and Long-term Memory Sync.",
+  "version": "5.4.3",
+  "contextFileName": "SKILL.md"
+}

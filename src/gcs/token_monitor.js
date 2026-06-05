@@ -165,15 +165,35 @@ function main() {
     const localPython = IS_WIN
       ? path.join(projectRoot || "", '.gemini', 'gcs-venv', 'Scripts', 'python.exe')
       : path.join(projectRoot || "", '.gemini', 'gcs-venv', 'bin', 'python3');
-    const extensionPython = IS_WIN
-      ? path.join(process.env.USERPROFILE || process.env.HOME, '.gemini/extensions/gcs-guardian/venv/Scripts/python.exe')
-      : path.join(process.env.HOME, '.gemini/extensions/gcs-guardian/venv/bin/python3');
+    const extensionPaths = [
+      path.join(process.env.USERPROFILE || process.env.HOME, '.gemini', 'extensions', 'custom-session-manager'),
+      path.join(process.env.USERPROFILE || process.env.HOME, '.gemini', 'skills', 'custom-session-manager'),
+      path.join(process.env.USERPROFILE || process.env.HOME, '.gemini', 'local-extensions', 'custom-session-manager')
+    ];
+
+    let extensionPython = IS_WIN ? 'python' : 'python3';
+    let extensionOrchestrator = '';
+
+    for (const extDir of extensionPaths) {
+      const py = IS_WIN
+        ? path.join(extDir, 'venv', 'Scripts', 'python.exe')
+        : path.join(extDir, 'venv', 'bin', 'python3');
+      const orch = path.join(extDir, 'src', 'gcs', 'gcs_orchestrator.py');
+      if (fs.existsSync(orch)) {
+        extensionOrchestrator = orch;
+        if (fs.existsSync(py)) {
+          extensionPython = py;
+        }
+        break;
+      }
+    }
+
     const pythonPath = fs.existsSync(localPython) ? localPython : (fs.existsSync(extensionPython) ? extensionPython : (IS_WIN ? 'python' : 'python3'));
 
     const localOrchestrator = projectRoot ? path.join(projectRoot, 'src', 'gcs', 'gcs_orchestrator.py') : '';
-    const extensionOrchestrator = path.join(process.env.HOME, '.gemini/extensions/gcs-guardian/scripts/gcs_orchestrator.py');
     const orchestratorPath = fs.existsSync(localOrchestrator) ? localOrchestrator : extensionOrchestrator;
     const preflightPath = projectRoot ? path.join(projectRoot, 'src', 'gcs', 'gcs_preflight.py') : '';
+
 
     if (fs.existsSync(orchestratorPath)) {
       let preflightOk = true;

@@ -1,0 +1,10 @@
+{
+  "name": "custom-session-manager",
+  "description": "Used for Autonomous Context Governance, Session Compaction (via /snapshot), and Long-term Memory Sync. V6.4.0 GCS Integrated.",
+  "version": "6.4.0",
+  "contextFileName": "SKILL.md",
+  "hooks": {
+    "SessionStart": "bash src/gcs/gcs_init.sh",
+    "AfterModel": "node src/gcs/token_monitor.js"
+  }
+}
