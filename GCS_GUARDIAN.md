@@ -1,6 +1,6 @@
 # 🛰️ GCS Guardian: Context Governance System (SSOT)
 
-> [!important] GCS Operation Guide (v1.25.0)
+> [!important] GCS Operation Guide (v1.26.0)
 > This project is the GCS Guardian context governance system. All context and dialogue progress are protected by the L4 skeleton rehydration protocol, strictly executing 20% threshold distillation monitoring.
 
 ---
@@ -41,6 +41,6 @@ All prompts and internal states must adhere to the following 6-layer layout to e
 - All Markdown (.md) files must include relevant topic hashtags (e.g., #gcs #architecture).
 
 ---
-*Updated to v1.25.0. GCS Guardian Ultimate SSOT.*
+*Updated to v1.26.0. GCS Guardian Ultimate SSOT.*
 
 #gcs #architecture #ssot #2026-06-06

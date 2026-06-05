@@ -4,6 +4,7 @@ const mod = require('../src/gcs/token_monitor.js');
 assert.deepStrictEqual(mod.getCompactBucketsToTrigger(10, 45, [20,30,40,50]), [20,30,40]);
 assert.deepStrictEqual(mod.getCompactBucketsToTrigger(20, 45, [20,30,40,50]), [30,40]);
 assert.deepStrictEqual(mod.getCompactBucketsToTrigger(40, 45, [20,30,40,50]), []);
+assert.deepStrictEqual(mod.getCompactBucketsToTrigger(40, 65), [50, 60]);
 assert.strictEqual(mod.resolveMaxContext('Gemini 3.5 Flash (Low)'), 1048576);
 assert.strictEqual(mod.resolveMaxContext('Gemini 3.5 Flash (High)'), 1048576);
 assert.strictEqual(mod.resolveMaxContext('Gemini_3.5_Flash [Low]'), 1048576);

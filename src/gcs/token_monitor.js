@@ -39,7 +39,7 @@ function hasToken(model, token) {
   return new RegExp(`(^|-)${token}(-|$)`).test(model);
 }
 
-function getCompactBucketsToTrigger(lastCompactBucket, percent, buckets = [20, 30, 40, 50]) {
+function getCompactBucketsToTrigger(lastCompactBucket, percent, buckets = [20, 30, 40, 50, 60, 70]) {
   return buckets.filter((b) => b > lastCompactBucket && b <= percent);
 }
 

@@ -1,12 +1,13 @@
-# Gemini CLI Unified Memory System V6.3.0: Autonomous "Universal Hybrid"
+# Gemini CLI Unified Memory System V6.4.0: Autonomous "Universal Hybrid"
 
-#2026-05-30
-**Status**: 🛰️ Production Ready (V6.3.0 "Tiered Incremental Distillation")
+#2026-06-05
+**Status**: 🛰️ Production Ready (V6.4.0 "Unified Snapshot Compaction")
 
 ## 📜 Change Log
 
 | Version | Date | Description | Author |
 | :--- | :--- | :--- | :--- |
+| **V6.4.0** | 2026-06-05 | 1. **Unified Snapshot Compaction**: Removed original Strategic Project Snapshot module, retaining only Tactical Compaction, and changed command to `/snapshot`. <br>2. **Threshold Alignment**: Fixed token monitor to support all progressive pruning thresholds up to 70% (20%, 30%, 40%, 50%, 60%, 70%). | Gemini CLI |
 | **V6.3.0** | 2026-05-30 | 1. **Tiered Incremental Distillation**: Introduced `DISTILL_TIERS` to replace the single 20% threshold with progressive pruning at 20%, 30%, 40%, 50%, 60%, and 70%.<br>2. Implemented atomic watermark recording (`gcs_watermark.json`) in `gcs_orchestrator.py` to prevent repeated threshold triggers. | Gemini CLI |
 | **V6.2.0** | 2026-05-30 | 1. **Universal Hybrid**: Integrated explicit bootstrap architecture from Windows version, binding `python3 lib/bootstrap.py` in `gemini-extension.json`.<br>2. Added defensive virtualenv recovery engine (`sys.executable`) and non-blocking safe stdin reading in `bootstrap.py`.<br>3. Retained Module C (`/scan2db`) and real-time Tmux status updates. | Gemini CLI |
 | **V6.0.1** | 2026-05-21 | 1. Added 10k token cooldown mechanism in `token_monitor.js`.<br>2. Fixed osascript shell escape syntax errors.<br>3. Added formal Change Log section. | Gemini CLI |
@@ -82,4 +83,4 @@ To prevent regression during future deployments:
 - **Model Detection & Limits**: Explicitly check `llm_request.model` for accurate context limit assignment (1M for Flash, 2M for Pro).
 - **Mandatory Restart**: Any change to `settings.json` or the Hook logic requires a **full restart** of the Gemini CLI process to take effect.
 
-#csm #gcs #changelog #universal #hybrid #2026-05-30
+#csm #gcs #changelog #universal #hybrid #2026-06-05
