@@ -1,3 +1,2 @@
-description = "Compress the current conversation context (Session Compact)"
+description = "Deep archive of project progress (Project Snapshot)"
 prompt = "/snapshot"
-

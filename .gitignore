@@ -15,3 +15,12 @@ venv/
 .gemini/checkpoint.json
 .gemini/monitor_state.json
 .gemini/gcs_notify.state
+
+# Testing cache
+.pytest_cache/
+
+# Project folders to ignore
+docs/
+tests/
+archive/
+

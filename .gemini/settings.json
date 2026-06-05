@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "BeforeModel": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "name": "gcs-guardian-interceptor",
+            "type": "script",
+            "path": "src/gcs/gcs_intercept.js"
+          }
+        ]
+      }
+    ],
+    "AfterTool": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "name": "gcs-guardian-monitor",
+            "type": "script",
+            "path": "src/gcs/token_monitor.js"
+          }
+        ]
+      }
+    ]
+  }
+}

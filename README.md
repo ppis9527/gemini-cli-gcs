@@ -1,4 +1,4 @@
-# Gemini CLI Context Governance System (GCS Guardian)
+# Custom Session Manager (GCS Guardian)
 
 GCS Guardian is an industrial-grade self-regulating framework for Gemini CLI, designed to combat "Context Decay" in long-running development sessions.
 
@@ -11,7 +11,7 @@ GCS Guardian is an industrial-grade self-regulating framework for Gemini CLI, de
 - **Atomic Concurrency Protection**: Implements cross-process atomic file locking using `fcntl` (Python) and exclusive `wx` creation (Node.js) to prevent race conditions during background distillation.
 - **Thread-Safe Singletons**: Robust rehydration mechanism with thread-safe initialization.
 - **LSP Integration**: Semantic awareness via Language Server Protocol (LSP) to automatically preserve implementations of "Hot Symbols".
-- **Multi-Threshold Background Compact**: Automatically runs background compaction at 20%, 30%, 40%, and 50% context usage with per-threshold deduplication.
+- **Multi-Threshold Background Compact**: Automatically runs background compaction at 20%, 30%, 40%, 50%, 60%, and 70% context usage with per-threshold deduplication.
 
 ## 🛠️ Components
 
@@ -51,45 +51,44 @@ This system is designed to be installed as a Gemini CLI Global Extension.
   - Claude `sonnet` / `opus` -> `200000`
   - `gpt-oss-120b` -> `131072`
   - unknown model -> fallback `1048576`
-- Background compact thresholds: `20%`, `30%`, `40%`, `50%`
+- Background compact thresholds: `20%`, `30%`, `40%`, `50%`, `60%`, `70%`
 - Catch-up behavior: if usage jumps across multiple thresholds in one step, all missed thresholds are triggered in order.
 
 ## 📜 Specification
 
-For deep technical details, see [GCS_GUARDIAN.md](./GCS_GUARDIAN.md) and the [Technical Whitepaper](./docs/gcs/GCS-Guardian-Ultimate-Whitepaper-v1.22.0.md).
+For deep technical details, see [GCS_GUARDIAN.md](./GCS_GUARDIAN.md) and the [Technical Whitepaper](./docs/gcs/GCS-Guardian-Ultimate-Whitepaper.md).
 
 ---
-*Created by Gemini 3.1 Pro. v1.25.0 Session-Aware 2026-06-01.*
+*Created by Gemini 3.1 Pro. Version 6.4.0 (GCS Guardian v1.26.0) 2026-06-06.*
 #gcs #governance #architecture #gemini-cli
 
-## 📈 Change List
+## 📈 Change Log
 
-### [2026-06-01] GCS Guardian v1.25.0: Session-Aware Tmux Status and Token Isolation
-- Made `token_monitor.js` session-aware by keying runtime state off tmux `session_id`, so prompt history and trigger buckets no longer bleed across sessions.
-- Added `tmux_status.sh` and updated tmux setup so `status-right` automatically follows the active tmux session.
-- Updated the installation guide and runtime docs to reflect the new session-scoped status files.
-- Added regression coverage for session-reset behavior and runtime path generation.
+### V6.4.0 (2026-06-05)
+- **Unified Snapshot Compaction**: Removed the original Strategic Project Snapshot module, retaining only the Tactical Compaction module, and changed the corresponding command from `/compact` to `/snapshot`.
+- Cleaned up obsolete configuration files and deprecated CLI hooks.
 
-### [2026-05-31] GCS Guardian v1.24.0: Reliability & Multi-Threshold Compact
+### V6.3.0 (2026-06-04)
+- **Session-Aware Tmux Status (v1.25.0)**: Made `token_monitor.js` session-aware by keying runtime state off tmux `session_id`, preventing prompt history bleeding across sessions.
+- **Tiered Incremental Distillation (v1.24.0)**: Introduced `DISTILL_TIERS` to replace the single 20% threshold with progressive pruning at 20%, 30%, 40%, 50%, 60%, and 70%.
+- Implemented atomic watermark recording (`gcs_watermark.json`) in `gcs_orchestrator.py` to prevent repeated threshold triggers.
 - Added `requirements.txt` and `gcs_preflight.py` for predictable runtime dependency checks.
 - Refined `token_monitor.js` with explicit model-to-context mapping and non-silent error reporting.
-- Upgraded compaction triggers from single-threshold behavior to ordered `20/30/40/50` threshold execution with deduplication.
-- Fixed interceptor/runtime integration issues and added lightweight regression tests (`tests/test_token_monitor.js`, `tests/test_intercept.py`).
 
-### [2026-05-24] GCS Guardian v1.23.0: YOLO Double-Threshold & Session Boundary Refinements
-- **Double-Threshold YOLO**: Context at 20% triggers quiet background `summarize` (AST skeletons checkpointed to `checkpoint.json` & `.gemini/gcs.pending` as `status: Summarized`), displaying `xx.x% ⚡` in footer and tmux without clearing the active Session history. Standard `Governance Triggered` status and Cold Reset (clearing history) are deferred until 60% system-level Compaction or manual `/compress`.
-- **UI Format Refinements**: Standardized all GCS context usage percentages to display with exactly 1 decimal place (e.g. `xx.x% ⚡`) across statusline and tmux status files.
-- **Verbose Log Silencing**: Reduced noisy progress logs in the standard flow.
+### V6.2.0 (2026-05-30)
+- **Universal Hybrid**: Integrated explicit bootstrap architecture from Windows version, binding `python3 lib/bootstrap.py` in `gemini-extension.json`.
+- Added defensive virtualenv recovery engine (`sys.executable`) and non-blocking safe stdin reading in `bootstrap.py`.
+- Retained Module C (`/scan2db`) and real-time Tmux status updates.
 
-### [2026-05-18] GCS Guardian v1.22.0: Precision Monitoring & Tmux Integration
-- **Cross-Model Compatibility**: Dynamically parses Gemini's `usageMetadata.promptTokenCount` and Claude/OpenAI's `usage.input_tokens` in `token_monitor.js`.
-- **Tmux Integration**: Unconditional state reset to `[GCS: 0%]` via `gcs_init.sh` and real-time lightweight status polling via `tmux_status`. Visual banner alerts triggered on YOLO distillations via `tmux display-message`.
-- **Global Hook Binding**: Deprecated `extension.json` binding for `AfterModel` due to CLI module loading restrictions, migrating to `~/.gemini/settings.json` with `matcher: "*"`.
-- **Whitepaper Update**: Upgraded architectural SSOT to v1.22.0.
+### V6.0.1 (2026-05-21)
+- Added 10k token cooldown mechanism in `token_monitor.js`.
+- Fixed osascript shell escape syntax errors.
+- Added formal Change Log section.
 
-### [2026-04-21] Universal Supply Chain Intelligence (USCI) Framework
-- **Universal Upgrade**: Transitioned from CPO-specific tracking to a generalized industrial intelligence framework.
-- **Semantic Search Architecture**: Adopted  for ACID-compliant vector search, unified at 768 dimensions (Nomic/Google API aligned).
-- **Two-Stage Filtering**: Implemented a robust extraction pipeline: Vector Recall (Stage 1) -> LLM Reasoning (Stage 2).
-- **Entity Resolution 2.0**: Added Wikidata integration for automated ticker and industry alignment.
-- **Schema Generalization**: Renamed core tables to  and  with multi-industry context support.
+### V6.0.0 (2026-05-18)
+- Integrated GCS Guardian automation framework.
+- Supported background YOLO distillation and Tmux status display.
+
+### V5.4.3 (2026-05-13)
+- Introduced AST-level code skeletonization.
+- Defined 6-layer context governance architecture.

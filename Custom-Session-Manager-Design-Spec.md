@@ -1,18 +1,17 @@
 # Gemini CLI Unified Memory System V6.3.0: Autonomous "Universal Hybrid"
 
-#2026-06-05
-**Status**: 🛰️ Production Ready (V6.4.0 "Unified Snapshot Compaction")
+#2026-05-30
+**Status**: 🛰️ Production Ready (V6.3.0 "Tiered Incremental Distillation")
 
-## 📜 Change Log (變更紀錄)
+## 📜 Change Log
 
-| 版本 | 日期 | 變更說明 | 作者 |
+| Version | Date | Description | Author |
 | :--- | :--- | :--- | :--- |
-| **V6.4.0** | 2026-06-05 | 1. **統一快照壓縮 (Unified Snapshot Compaction)**：取消原有的 Strategic Project Snapshot 模組，僅保留 Tactical Compaction 模組，並將對應的指令由 `/compact` 改為 `/snapshot`。 | Gemini CLI |
-| **V6.3.0** | 2026-05-30 | 1. **階梯式增量蒸餾 (Incremental Distillation)**：導入 `DISTILL_TIERS`，將單一 20% 門檻升級為 20%, 30%, 40%, 50%, 60%, 70% 持續修剪。<br>2. 於 `gcs_orchestrator.py` 實作原子化階梯水位紀錄 (`gcs_watermark.json`)，避免閥值反覆觸發。 | Gemini CLI |
-| **V6.2.0** | 2026-05-30 | 1. **世紀融合 (Universal Hybrid)**：吸收 Windows 專用版的 Bootstrap 顯式引導架構，於 `gemini-extension.json` 綁定 `python3 lib/bootstrap.py`。<br>2. 於 `bootstrap.py` 新增防禦性虛擬環境遺失降級引擎 (`sys.executable`) 與 stdin 非阻塞安全讀取。<br>3. 保有 `Module C (/scan2db)` 與 Tmux 即時狀態更新。 | Gemini CLI |
-| **V6.0.1** | 2026-05-21 | 1. `token_monitor.js` 增加 10k token 冷卻機制。<br>2. 修正 osascript shell 轉義語法錯誤。<br>3. 加入正式 Change Log 區塊。 | Gemini CLI |
-| **V6.0.0** | 2026-05-18 | 1. 整合 GCS Guardian 自動化治理框架。<br>2. 支援背景 YOLO 蒸餾與 Tmux 狀態顯示。 | Gemini CLI |
-| **V5.4.3** | 2026-05-13 | 1. 引入 AST 級別代碼骨架化 (Skeletonization)。<br>2. 定義 6 層上下文治理架構。 | Gemini CLI |
+| **V6.3.0** | 2026-05-30 | 1. **Tiered Incremental Distillation**: Introduced `DISTILL_TIERS` to replace the single 20% threshold with progressive pruning at 20%, 30%, 40%, 50%, 60%, and 70%.<br>2. Implemented atomic watermark recording (`gcs_watermark.json`) in `gcs_orchestrator.py` to prevent repeated threshold triggers. | Gemini CLI |
+| **V6.2.0** | 2026-05-30 | 1. **Universal Hybrid**: Integrated explicit bootstrap architecture from Windows version, binding `python3 lib/bootstrap.py` in `gemini-extension.json`.<br>2. Added defensive virtualenv recovery engine (`sys.executable`) and non-blocking safe stdin reading in `bootstrap.py`.<br>3. Retained Module C (`/scan2db`) and real-time Tmux status updates. | Gemini CLI |
+| **V6.0.1** | 2026-05-21 | 1. Added 10k token cooldown mechanism in `token_monitor.js`.<br>2. Fixed osascript shell escape syntax errors.<br>3. Added formal Change Log section. | Gemini CLI |
+| **V6.0.0** | 2026-05-18 | 1. Integrated GCS Guardian automation framework.<br>2. Supported background YOLO distillation and Tmux status display. | Gemini CLI |
+| **V5.4.3** | 2026-05-13 | 1. Introduced AST-level code skeletonization.<br>2. Defined 6-layer context governance architecture. | Gemini CLI |
 
 ## 1. Objectives & Vision
 V6.0.0 marks the transition from manual context management to **Autonomous Context Governance**. By integrating the **GCS Guardian** framework, the system now provides real-time token monitoring, background AST-level distillation, and zero-touch session rehydration.
@@ -39,9 +38,9 @@ graph TD
     User[/clear Command/] --> Init[gcs_init.sh]
     Init -->|Inject L4| Checkpoint
     
-    User[/snapshot Command/] --> CSM[CSM v6.0]
+    User[/compact Command/] --> CSM[CSM v6.0]
     CSM -->|Force Distill| Checkpoint
-    CSM -->|Archive| Snapshot[Google Drive Snapshot.md]
+    CSM -->|Archive| Snapshot[Google Drive Compact.md]
 ```
 
 ## 4. Components
@@ -83,4 +82,4 @@ To prevent regression during future deployments:
 - **Model Detection & Limits**: Explicitly check `llm_request.model` for accurate context limit assignment (1M for Flash, 2M for Pro).
 - **Mandatory Restart**: Any change to `settings.json` or the Hook logic requires a **full restart** of the Gemini CLI process to take effect.
 
-#csm #gcs #changelog #universal #hybrid #2026-06-05
+#csm #gcs #changelog #universal #hybrid #2026-05-30

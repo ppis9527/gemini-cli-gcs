@@ -1,46 +1,46 @@
 # 🛰️ GCS Guardian: Context Governance System (SSOT)
 
-> [!important] GCS 運作指南 (v1.25.0)
-> 本專案為 GCS Guardian 終極治理系統。所有 Context 與對話進度均受 L4 骨架重灌協議保護，嚴格執行 20% 閾值蒸餾監控。
+> [!important] GCS Operation Guide (v1.25.0)
+> This project is the GCS Guardian context governance system. All context and dialogue progress are protected by the L4 skeleton rehydration protocol, strictly executing 20% threshold distillation monitoring.
 
 ---
 
-## 🏗️ 系統規範 (System Mandates)
+## 🏗️ System Mandates
 
-### [[v3.0 專案隔離與記憶保護協定]]
-- **專案隔離**: Context 與記憶嚴格限制在各自的目錄內，禁止自動跨目錄聚合。
-- **手動存檔**: 僅在使用者明確指令下執行特定專案的快照 (Snapshot)。
-- **向量索引**: `index_sync` 僅對原始文件進行增量索引。
+### Project Isolation & Memory Protection Protocol (v3.0)
+- **Project Isolation**: Context and memory are strictly restricted to their respective directories; automatic cross-directory aggregation is prohibited.
+- **Manual Archiving**: Execute project-specific snapshots only upon explicit user command.
+- **Vector Indexing**: `index_sync` performs incremental indexing only on raw source files.
 
 ---
 
 ## 🛰️ GCS (Context Governance System) Layered Architecture
 
-所有 Prompt 與內部狀態必須遵循以下 6 層佈局，以確保前綴不變性 (Prefix Invariance) 與最大化 KV Cache 效率。
+All prompts and internal states must adhere to the following 6-layer layout to ensure prefix invariance and maximize KV Cache efficiency.
 
 <gcs_layout_mandate>
-1. [SYSTEM_MANDATES]: 核心規則、安全指南與 GCS 操作規範。
-2. [SKILLS_KNOWLEDGE]: 已啟動的 Agent 技能與工具定義。
-3. [PROJECT_MANIFEST]: 2k 預算內的專案目錄樹與環境變量。
-4. [CHECKPOINT_SUMMARY]: 由 gcs_init.sh 從 .gemini/checkpoint.json 注入的骨架化代碼。
-5. [ACTIVE_SOURCE]: 當前涉及的完整檔案內容 (4096B 桶對齊)。
-6. [EPHEMERAL_CONTEXT]: 即時 Git Diff、最近對話歷史與臨時工具輸出。
+1. [SYSTEM_MANDATES]: Core rules, security guidelines, and GCS operating specifications.
+2. [SKILLS_KNOWLEDGE]: Activated agent skills and tool definitions.
+3. [PROJECT_MANIFEST]: Project directory tree and environment variables within a 2k budget.
+4. [CHECKPOINT_SUMMARY]: Skeletonized code injected by gcs_init.sh from .gemini/checkpoint.json.
+5. [ACTIVE_SOURCE]: Complete content of files currently involved (aligned to 4096B buckets).
+6. [EPHEMERAL_CONTEXT]: Real-time Git Diff, recent 3-turn dialogue history, and temporary tool outputs.
 </gcs_layout_mandate>
 
-## 📊 治理指標與閾值 (Context Governance Mandate)
+## 📊 Governance Metrics & Thresholds (Context Governance Mandate)
 
-### ♻️ GCS 生命週期流程 (20% 閾值)
-1. **偵測 (Detection)**: 當 `token_monitor.js` 偵測到 Token 使用率達到 **20%** 時，自動啟動背景蒸餾。實際門檻依模型 context window 動態換算，例如 1M 模型約為 200k、2M 模型約為 400k。
-2. **預警 (Alert)**: 當飽和度達到 80% 時，顯示通知要求使用者執行 `/clear`。
-3. **續行 (Resume)**: 使用者輸入 `/clear` 後，`gcs_init.sh` 讀取 `checkpoint.json` 重灌 L4 骨架並恢復任務狀態。
+### ♻️ GCS Lifecycle Flow (20% Threshold)
+1. **Detection**: When `token_monitor.js` detects context usage reaching **20%**, it automatically triggers background distillation. The actual threshold is dynamically converted based on the model's context window, e.g., ~200k for 1M models, ~400k for 2M models.
+2. **Alert**: When saturation reaches 80%, a terminal banner notification prompts the user to execute `/clear`.
+3. **Resume**: After the user enters `/clear`, `gcs_init.sh` reads `checkpoint.json` to rehydrate the L4 skeleton and resume the task state.
 
 ---
 
-## 📝 Markdown 標籤規範
-- 所有 Markdown (.md) 檔案必須包含當天日期的 hashtag 標籤 (#yyyy-mm-dd)。
-- 所有 Markdown (.md) 檔案必須包含與內容相關的主題標籤 (例如 #gcs #architecture)。
+## 📝 Markdown Tag Specifications
+- All Markdown (.md) files must include a hashtag with the current date (#yyyy-mm-dd).
+- All Markdown (.md) files must include relevant topic hashtags (e.g., #gcs #architecture).
 
 ---
 *Updated to v1.25.0. GCS Guardian Ultimate SSOT.*
 
-#2026-05-31 #gcs #architecture #ssot
+#gcs #architecture #ssot #2026-06-06
