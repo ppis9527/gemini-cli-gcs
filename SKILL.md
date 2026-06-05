@@ -1,9 +1,9 @@
 ---
 name: custom-session-manager
-description: Used for Autonomous Context Governance, Session Compaction, Project Snapshots, and Long-term Memory Sync. V6.3.0 "Universal Hybrid" integrates rigorous Python bootstrap hooks, GCS Guardian, and ChromaDB vector synchronization across all platforms.
+description: Used for Autonomous Context Governance, Session Compaction, Project Snapshots, and Long-term Memory Sync. V6.4.0 "Universal Hybrid" integrates GCS Guardian and ChromaDB vector synchronization.
 ---
 
-# Skill: Custom Session Manager (V6.3.0 Universal Hybrid)
+# Skill: Custom Session Manager (V6.4.0 Universal Hybrid)
 
 ## 🛰️ Module D: Autonomous Context Governance (GCS Guardian)
 **Goal: No-ops Governance. Combat "Context Decay" via real-time monitoring and background distillation.**
@@ -12,9 +12,9 @@ description: Used for Autonomous Context Governance, Session Compaction, Project
 - **Rigorous Bootstrap Engine**: `SessionStart` and `AfterModel` hooks are explicitly routed via `python3 lib/bootstrap.py` for bulletproof multi-platform compatibility across Windows, gMac, and gLinux.
 - **Real-time Monitoring**: Polled via Node.js subprocess to evaluate `usageMetadata` (skipping 0-token chunks) and display live status in Tmux (`[GCS: XX%]`).
 - **Tiered Incremental Distillation**: When context reaches 20%, 30%, 40%, 50%, 60%, or 70%, the system automatically triggers `gcs_orchestrator.py` in the background with atomic watermark tracking to trim AST skeletons continuously.
-- **80% Threshold (Critical Alert)**: Displays a banner alert asking the user to execute `/compact` or `/clear` to reset the session.
+- **80% Threshold (Critical Alert)**: Displays a banner alert asking the user to execute `/snapshot` or `/clear` to reset the session.
 
-## 🧠 Module A: Tactical Compaction & Handoff (Command: /compact)
+## 🧠 Module A: Tactical Compaction & Handoff (Command: /snapshot)
 **Goal: Tactical Relay. Leverage GCS for high-fidelity skeletonization and Zlib-compressed checkpoints.**
 
 ### Execution Steps:
@@ -26,14 +26,7 @@ description: Used for Autonomous Context Governance, Session Compaction, Project
    - **L4 (GCS Skeletons)**: Inject content from `.gemini/checkpoint.json`.
    - **L5 (Active Source)**: Preserve critical files currently being edited.
    - **L6 (Ephemeral)**: Recent history, Git Diffs, and Pending Tasks.
-3. **Archiving**: Save a copy to `"[gdrive]/Gemini CLI/Snapshots/Compact-yyyy-mm-dd-[topic].md"`.
-
-## 📜 Module B: Strategic Project Snapshot (Command: /snapshot)
-**Goal: Strategic Recording. Track project evolution and architectural decisions (ADR) over the long term.**
-
-### Execution Steps:
-1. **Generate Deep Archive**: Include North Star Goal, Progress Evidence, ADR, Constraints, and Git State.
-2. **Archiving**: Save to `"[gdrive]/Gemini CLI/Snapshots/Snapshot-yyyy-mm-dd-[topic].md"`.
+3. **Archiving**: Save a copy to `"[gdrive]/Gemini CLI/Snapshots/Snapshot-yyyy-mm-dd-[topic].md"`.
 
 ## 🗄️ Module C: Long-term Memory Sync (Command: /scan2db)
 **Goal: Global Memory Alignment. Synchronize Obsidian Vault with the vector database.**
@@ -43,9 +36,8 @@ description: Used for Autonomous Context Governance, Session Compaction, Project
 (Scripts located in "[gdrive]/Gemini_Memory_System_Package/mcp_server/")
 
 ## 🚀 Command Summary
-- **/compact**: Triggers high-fidelity distillation and guides session restart.
-- **/snapshot**: Performs deep architectural and progress archiving.
+- **/snapshot**: Triggers high-fidelity distillation and guides session restart.
 - **/scan2db**: Syncs local notes to long-term memory (ChromaDB).
 - **GCS Status**: Check Tmux status bar or `.gemini/gcs.log` for real-time governance stats.
 
-#custom-session-manager #gcs #guardian #universal #hybrid #2026-05-30
+#custom-session-manager #gcs #guardian #universal #hybrid #2026-06-05
