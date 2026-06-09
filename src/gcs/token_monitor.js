@@ -5,6 +5,9 @@ const os = require('os');
 const { exec, execSync } = require('child_process');
 const IS_WIN = process.platform === "win32";
 
+const LOCK_TIMEOUT_MS = 2000; // 2s global protection, ensuring it absolutely never blocks main user conversation
+setTimeout(() => process.exit(0), LOCK_TIMEOUT_MS);
+
 function resolveMaxContext(modelName) {
   const model = normalizeModelName(modelName);
   const MODEL_CONTEXT_MAP = {
@@ -69,10 +72,21 @@ function getSessionRuntimePaths(sessionId) {
   };
 }
 
-function shouldResetSession(previousPromptTokens, currentPromptTokens) {
+function shouldResetSession(previousPromptTokens, currentPromptTokens, maxContext) {
   const previous = Number(previousPromptTokens || 0);
   const current = Number(currentPromptTokens || 0);
-  return previous > 0 && current > 0 && current < previous;
+  const limit = Number(maxContext || 1048576);
+  if (previous > 0 && current > 0) {
+    // Reset if it drops below 10% of maximum context
+    if (current / limit < 0.10) {
+      return true;
+    }
+    // Or if it drops by more than 50% of the previous value (e.g. manual clear)
+    if (current < previous * 0.5) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function printToPane(text) {
@@ -186,7 +200,7 @@ function main() {
       const state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
       lastStep = state.last_notified_step || 0;
       lastCompactBucket = state.last_compact_bucket || 0;
-      if (shouldResetSession(state.prompt_tokens, promptTokens)) {
+      if (shouldResetSession(state.prompt_tokens, promptTokens, MAX_CONTEXT)) {
         lastStep = 0;
         lastCompactBucket = 0;
       }
