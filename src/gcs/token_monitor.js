@@ -176,7 +176,6 @@ function main() {
   for (const bucket of pendingCompactBuckets) {
     process.stderr.write(`\n🚨 [GCS] ${bucket}% threshold reached. Background compact triggered.\n`);
     try {
-      exec(`tmux display-message '🚨 [GCS] Background YOLO distillation triggered!'`, () => {});
       writeStatus(`[GCS: ${percentUsed}% ⚡ YOLO]`);
     } catch(e) {}
     const localPython = IS_WIN
