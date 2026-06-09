@@ -46,7 +46,9 @@ function getCompactBucketsToTrigger(lastCompactBucket, percent, buckets = [20, 3
 function resolveTmuxSessionId() {
   try {
     if (!process.env.TMUX && !process.env.TMUX_PANE) return 'no-tmux';
-    const sessionId = execSync("tmux display-message -p -F '#{session_id}'", {
+    const paneId = process.env.TMUX_PANE;
+    const targetOpt = paneId ? `-t "${paneId}"` : '';
+    const sessionId = execSync(`tmux display-message ${targetOpt} -p -F '#{session_id}'`, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();
@@ -79,7 +81,9 @@ function printToPane(text) {
       process.stderr.write(text + '\n');
       return;
     }
-    const tty = execSync("tmux display-message -p '#{pane_tty}'", {
+    const paneId = process.env.TMUX_PANE;
+    const targetOpt = paneId ? `-t "${paneId}"` : '';
+    const tty = execSync(`tmux display-message ${targetOpt} -p '#{pane_tty}'`, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();
