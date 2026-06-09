@@ -73,6 +73,27 @@ function shouldResetSession(previousPromptTokens, currentPromptTokens) {
   return previous > 0 && current > 0 && current < previous;
 }
 
+function printToPane(text) {
+  try {
+    if (!process.env.TMUX && !process.env.TMUX_PANE) {
+      process.stderr.write(text + '\n');
+      return;
+    }
+    const tty = execSync("tmux display-message -p '#{pane_tty}'", {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (tty && fs.existsSync(tty)) {
+      // Print on the line above the current cursor position to avoid splitting prompt input
+      fs.writeFileSync(tty, `\x1b[s\x1b[A\r\x1b[K${text}\x1b[u`);
+    } else {
+      process.stderr.write(text + '\n');
+    }
+  } catch (e) {
+    process.stderr.write(text + '\n');
+  }
+}
+
 
 
 function main() {
@@ -176,7 +197,9 @@ function main() {
 
   const pendingCompactBuckets = getCompactBucketsToTrigger(lastCompactBucket, currentPercent);
   for (const bucket of pendingCompactBuckets) {
-    process.stderr.write(`\n\x1b[1;33m🚨 [GCS] ${bucket}% threshold reached. Background compaction triggered!\x1b[0m\n`);
+    const color = bucket >= 50 ? '\x1b[1;31m' : '\x1b[1;33m';
+    const msg = `${color}🚨 [GCS] ${bucket}% threshold reached. Background compaction triggered!\x1b[0m`;
+    printToPane(msg);
     try {
       writeStatus(`[GCS: ${percentUsed}% ⚡ YOLO]`);
     } catch(e) {}
