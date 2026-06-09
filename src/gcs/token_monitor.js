@@ -73,12 +73,7 @@ function shouldResetSession(previousPromptTokens, currentPromptTokens) {
   return previous > 0 && current > 0 && current < previous;
 }
 
-function triggerPopup(bucket) {
-  try {
-    if (!process.env.TMUX && !process.env.TMUX_PANE) return;
-    exec(`tmux display-popup -EE -h 3 -w 65 "echo -e '\\n  \\e[1;33m🚨 [GCS] ${bucket}% threshold reached. Background compaction triggered!\\e[0m'; sleep 2"`, () => {});
-  } catch (e) {}
-}
+
 
 function main() {
   try {
@@ -181,7 +176,7 @@ function main() {
 
   const pendingCompactBuckets = getCompactBucketsToTrigger(lastCompactBucket, currentPercent);
   for (const bucket of pendingCompactBuckets) {
-    triggerPopup(bucket);
+    process.stderr.write(`\n\x1b[1;33m🚨 [GCS] ${bucket}% threshold reached. Background compaction triggered!\x1b[0m\n`);
     try {
       writeStatus(`[GCS: ${percentUsed}% ⚡ YOLO]`);
     } catch(e) {}
