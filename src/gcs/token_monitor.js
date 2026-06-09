@@ -73,24 +73,11 @@ function shouldResetSession(previousPromptTokens, currentPromptTokens) {
   return previous > 0 && current > 0 && current < previous;
 }
 
-function printToPane(text) {
+function triggerPopup(bucket) {
   try {
-    if (!process.env.TMUX && !process.env.TMUX_PANE) {
-      process.stderr.write(text);
-      return;
-    }
-    const tty = execSync("tmux display-message -p '#{pane_tty}'", {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
-    if (tty && fs.existsSync(tty)) {
-      fs.writeFileSync(tty, text);
-    } else {
-      process.stderr.write(text);
-    }
-  } catch (e) {
-    process.stderr.write(text);
-  }
+    if (!process.env.TMUX && !process.env.TMUX_PANE) return;
+    exec(`tmux display-popup -EE -h 3 -w 65 "echo -e '\\n  \\e[1;33m🚨 [GCS] ${bucket}% threshold reached. Background compaction triggered!\\e[0m'; sleep 2"`, () => {});
+  } catch (e) {}
 }
 
 function main() {
@@ -194,8 +181,7 @@ function main() {
 
   const pendingCompactBuckets = getCompactBucketsToTrigger(lastCompactBucket, currentPercent);
   for (const bucket of pendingCompactBuckets) {
-    const msg = `\n\x1b[1;33m🚨 [GCS] ${bucket}% threshold reached. Background compaction triggered!\x1b[0m\n`;
-    printToPane(msg);
+    triggerPopup(bucket);
     try {
       writeStatus(`[GCS: ${percentUsed}% ⚡ YOLO]`);
     } catch(e) {}
