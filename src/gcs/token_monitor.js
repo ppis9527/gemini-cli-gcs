@@ -116,7 +116,11 @@ function printToPane(text) {
 
 function main() {
   try {
-    const input = JSON.parse(fs.readFileSync(0, 'utf-8'));
+    const rawInput = fs.readFileSync(0, 'utf-8');
+    if (!rawInput.trim()) { console.log(JSON.stringify({})); process.exit(0); }
+    const input = JSON.parse(rawInput);
+    if (!input || typeof input !== 'object') { console.log(JSON.stringify({})); process.exit(0); }
+
     let promptTokens = 0;
     let outputTokens = 0;
     let cachedTokens = 0;
@@ -164,7 +168,7 @@ function main() {
     gdriveStatusPath = "G:\\My Drive\\MyMDs\\System status\\gcert\\.remote_gcs_status";
   } else if (process.platform === "darwin") {
     const cloudStorageDir = path.join(HOME, "Library/CloudStorage");
-    let gdriveDir = "GoogleDrive-yaojenliu@google.com"; // Fallback default
+    let gdriveDir = `GoogleDrive-${os.userInfo().username}@google.com`; // Dynamic fallback default
     try {
       if (fs.existsSync(cloudStorageDir)) {
         const folders = fs.readdirSync(cloudStorageDir);
