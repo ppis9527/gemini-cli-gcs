@@ -2,11 +2,12 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { exec, execSync } = require('child_process');
+const { exec, execSync, execFileSync } = require('child_process');
 const IS_WIN = process.platform === "win32";
 
 const LOCK_TIMEOUT_MS = 2000; // 2s global protection, ensuring it absolutely never blocks main user conversation
-setTimeout(() => process.exit(0), LOCK_TIMEOUT_MS);
+const timer = setTimeout(() => process.exit(0), LOCK_TIMEOUT_MS);
+timer.unref();
 
 function resolveMaxContext(modelName) {
   const model = normalizeModelName(modelName);
@@ -30,7 +31,7 @@ function resolveMaxContext(modelName) {
 }
 
 function normalizeModelName(modelName) {
-  return (modelName || '')
+  return String(modelName || '')
     .toLowerCase()
     .replace(/\([^)]*\)/g, ' ')
     .replace(/[^a-z0-9]+/g, '-')
@@ -49,11 +50,15 @@ function getCompactBucketsToTrigger(lastCompactBucket, percent, buckets = [20, 3
 function resolveTmuxSessionId() {
   try {
     if (!process.env.TMUX && !process.env.TMUX_PANE) return 'no-tmux';
-    const paneId = process.env.TMUX_PANE;
-    const targetOpt = paneId ? `-t "${paneId}"` : '';
-    const sessionId = execSync(`tmux display-message ${targetOpt} -p -F '#{session_id}'`, {
+    const args = ['display-message'];
+    if (process.env.TMUX_PANE) {
+      args.push('-t', process.env.TMUX_PANE);
+    }
+    args.push('-p', '-F', '#{session_id}');
+    const sessionId = execFileSync('tmux', args, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 1500,
     }).trim();
     return sessionId || 'no-tmux';
   } catch (e) {
@@ -75,10 +80,10 @@ function getSessionRuntimePaths(sessionId) {
 function shouldResetSession(previousPromptTokens, currentPromptTokens, maxContext) {
   const previous = Number(previousPromptTokens || 0);
   const current = Number(currentPromptTokens || 0);
-  const limit = Number(maxContext || 1048576);
+  const limit = Number(maxContext) > 0 ? Number(maxContext) : 1048576;
   if (previous > 0 && current > 0) {
-    // Reset if it drops below 10% of maximum context
-    if (current / limit < 0.10) {
+    // Reset if it drops below 10% of maximum context (meaning it transitioned from above 10% to below 10%)
+    if (previous / limit >= 0.10 && current / limit < 0.10) {
       return true;
     }
     // Or if it drops by more than 50% of the previous value (e.g. manual clear)
@@ -95,11 +100,15 @@ function printToPane(text) {
       process.stderr.write(text + '\n');
       return;
     }
-    const paneId = process.env.TMUX_PANE;
-    const targetOpt = paneId ? `-t "${paneId}"` : '';
-    const tty = execSync(`tmux display-message ${targetOpt} -p '#{pane_tty}'`, {
+    const args = ['display-message'];
+    if (process.env.TMUX_PANE) {
+      args.push('-t', process.env.TMUX_PANE);
+    }
+    args.push('-p', '#{pane_tty}');
+    const tty = execFileSync('tmux', args, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 1500,
     }).trim();
     if (tty && fs.existsSync(tty)) {
       // Print on the line above the current cursor position to avoid splitting prompt input
@@ -115,6 +124,10 @@ function printToPane(text) {
 
 
 function main() {
+  if (process.stdin.isTTY) {
+    console.log(JSON.stringify({}));
+    process.exit(0);
+  }
   try {
     const rawInput = fs.readFileSync(0, 'utf-8');
     if (!rawInput.trim()) { console.log(JSON.stringify({})); process.exit(0); }
@@ -129,20 +142,20 @@ function main() {
 
     if (input.context_window) {
       // Format B: Jetski statusline payload
-      promptTokens = input.context_window.total_input_tokens || 0;
-      outputTokens = input.context_window.total_output_tokens || 0;
+      promptTokens = Number(input.context_window.total_input_tokens) || 0;
+      outputTokens = Number(input.context_window.total_output_tokens) || 0;
       const currUsage = input.context_window.current_usage || {};
-      cachedTokens = currUsage.cache_read_input_tokens || 0;
-      modelName = (input.model?.id || 'gemini-2.5-flash').toLowerCase();
+      cachedTokens = Number(currUsage.cache_read_input_tokens) || 0;
+      modelName = String(input.model?.id || input.model || 'gemini-2.5-flash').toLowerCase();
       maxContextOverride = input.context_window.context_window_size || null;
     } else if (input.llm_response) {
       // Format A: Standard model hook payload
       const resp = input.llm_response;
       const usage = resp.usageMetadata || resp.usage || {};
-      promptTokens = usage.promptTokenCount || usage.input_tokens || 0;
-      outputTokens = usage.candidatesTokenCount || usage.output_tokens || 0;
-      cachedTokens = usage.cachedContentTokenCount || usage.cache_creation_input_tokens || usage.cache_read_input_tokens || 0;
-      modelName = (resp.model || input.llm_request?.model || 'gemini-2.5-flash').toLowerCase();
+      promptTokens = Number(usage.promptTokenCount || usage.input_tokens) || 0;
+      outputTokens = Number(usage.candidatesTokenCount || usage.output_tokens) || 0;
+      cachedTokens = Number(usage.cachedContentTokenCount || usage.cache_creation_input_tokens || usage.cache_read_input_tokens) || 0;
+      modelName = String(resp.model || input.llm_request?.model || 'gemini-2.5-flash').toLowerCase();
     } else {
       // Unsupported structure
       console.log(JSON.stringify({}));
@@ -151,7 +164,8 @@ function main() {
 
     if (promptTokens === 0) { console.log(JSON.stringify({})); process.exit(0); }
 
-    const MAX_CONTEXT = maxContextOverride || resolveMaxContext(modelName);
+    const parsedOverride = Number(maxContextOverride);
+    const MAX_CONTEXT = (parsedOverride > 0) ? parsedOverride : resolveMaxContext(modelName);
 
     const ratio = promptTokens / MAX_CONTEXT;
     const percentUsed = (ratio * 100).toFixed(1);
@@ -163,20 +177,28 @@ function main() {
   const globalStatusPath = sessionPaths.statusFile;
 
   const HOME = os.homedir();
-  let gdriveStatusPath;
+  let gdriveStatusPath = null;
   if (IS_WIN) {
     gdriveStatusPath = "G:\\My Drive\\MyMDs\\System status\\gcert\\.remote_gcs_status";
   } else if (process.platform === "darwin") {
     const cloudStorageDir = path.join(HOME, "Library/CloudStorage");
-    let gdriveDir = `GoogleDrive-${os.userInfo().username}@google.com`; // Dynamic fallback default
+    let username = null;
     try {
-      if (fs.existsSync(cloudStorageDir)) {
-        const folders = fs.readdirSync(cloudStorageDir);
-        const found = folders.find(f => f.startsWith("GoogleDrive-"));
-        if (found) gdriveDir = found;
-      }
-    } catch(e) {}
-    gdriveStatusPath = path.join(cloudStorageDir, gdriveDir, "My Drive/MyMDs/System status/gcert/.remote_gcs_status");
+      username = os.userInfo().username || process.env.USER || process.env.USERNAME;
+    } catch (e) {
+      username = process.env.USER || process.env.USERNAME;
+    }
+    if (username) {
+      let gdriveDir = `GoogleDrive-${username}@google.com`; // Dynamic fallback default
+      try {
+        if (fs.existsSync(cloudStorageDir)) {
+          const folders = fs.readdirSync(cloudStorageDir);
+          const found = folders.find(f => f.startsWith("GoogleDrive-"));
+          if (found) gdriveDir = found;
+        }
+      } catch(e) {}
+      gdriveStatusPath = path.join(cloudStorageDir, gdriveDir, "My Drive/MyMDs/System status/gcert/.remote_gcs_status");
+    }
   } else {
     gdriveStatusPath = path.join(HOME, "DriveFileStream/My Drive/MyMDs/System status/gcert/.remote_gcs_status");
   }
@@ -186,10 +208,11 @@ function main() {
       fs.mkdirSync(sessionPaths.sessionRoot, { recursive: true });
       fs.writeFileSync(globalStatusPath, text);
     } catch(e) {}
-    try {
-      fs.mkdirSync(path.dirname(gdriveStatusPath), { recursive: true });
-      fs.writeFileSync(gdriveStatusPath, text);
-    } catch(e) {}
+    if (gdriveStatusPath) {
+      try {
+        fs.writeFileSync(gdriveStatusPath, text);
+      } catch(e) {}
+    }
   }
 
   writeStatus(`GCS: ${percentUsed}%${flashIcon}`);
@@ -218,7 +241,8 @@ function main() {
   }
 
   const pendingCompactBuckets = getCompactBucketsToTrigger(lastCompactBucket, currentPercent);
-  for (const bucket of pendingCompactBuckets) {
+  if (pendingCompactBuckets.length > 0) {
+    const bucket = pendingCompactBuckets[pendingCompactBuckets.length - 1];
     const color = bucket >= 50 ? '\x1b[1;31m' : '\x1b[1;33m';
     const msg = `${color}🚨 [GCS] ${bucket}% threshold reached. Background compaction triggered!\x1b[0m`;
     printToPane(msg);
@@ -226,12 +250,12 @@ function main() {
       writeStatus(`[GCS: ${percentUsed}% ⚡ YOLO]`);
     } catch(e) {}
     const localPython = IS_WIN
-      ? path.join(projectRoot || "", '.gemini', 'gcs-venv', 'Scripts', 'python.exe')
-      : path.join(projectRoot || "", '.gemini', 'gcs-venv', 'bin', 'python3');
+      ? (projectRoot ? path.join(projectRoot, '.gemini', 'gcs-venv', 'Scripts', 'python.exe') : null)
+      : (projectRoot ? path.join(projectRoot, '.gemini', 'gcs-venv', 'bin', 'python3') : null);
     const extensionPaths = [
-      path.join(process.env.USERPROFILE || process.env.HOME, '.gemini', 'extensions', 'custom-session-manager'),
-      path.join(process.env.USERPROFILE || process.env.HOME, '.gemini', 'skills', 'custom-session-manager'),
-      path.join(process.env.USERPROFILE || process.env.HOME, '.gemini', 'local-extensions', 'custom-session-manager')
+      path.join(os.homedir(), '.gemini', 'extensions', 'custom-session-manager'),
+      path.join(os.homedir(), '.gemini', 'skills', 'custom-session-manager'),
+      path.join(os.homedir(), '.gemini', 'local-extensions', 'custom-session-manager')
     ];
 
     let extensionPython = IS_WIN ? 'python' : 'python3';
@@ -251,21 +275,26 @@ function main() {
       }
     }
 
-    const pythonPath = fs.existsSync(localPython) ? localPython : (fs.existsSync(extensionPython) ? extensionPython : (IS_WIN ? 'python' : 'python3'));
+    const isAbsExtPy = path.isAbsolute(extensionPython);
+    let pythonPath = (localPython && fs.existsSync(localPython))
+      ? localPython
+      : ((isAbsExtPy && fs.existsSync(extensionPython)) ? extensionPython : (IS_WIN ? 'python' : 'python3'));
 
     const localOrchestrator = projectRoot ? path.join(projectRoot, 'src', 'gcs', 'gcs_orchestrator.py') : '';
     const orchestratorPath = fs.existsSync(localOrchestrator) ? localOrchestrator : extensionOrchestrator;
-    const preflightPath = projectRoot ? path.join(projectRoot, 'src', 'gcs', 'gcs_preflight.py') : '';
+    const preflightPath = orchestratorPath ? path.join(path.dirname(orchestratorPath), 'gcs_preflight.py') : '';
 
 
     if (fs.existsSync(orchestratorPath)) {
       let preflightOk = true;
       if (fs.existsSync(preflightPath)) {
         try {
-          execSync(`"${pythonPath}" "${preflightPath}"`, { stdio: 'ignore' });
+          execFileSync(pythonPath, [preflightPath], { stdio: 'ignore', timeout: 1500 });
         } catch (e) {
           try {
-            execSync(`python3 "${preflightPath}"`, { stdio: 'ignore' });
+            const fallbackPy = IS_WIN ? 'python' : 'python3';
+            execFileSync(fallbackPy, [preflightPath], { stdio: 'ignore', timeout: 1500 });
+            pythonPath = fallbackPy;
           } catch (fallbackErr) {
             preflightOk = false;
             process.stderr.write(`\n[WARN] GCS preflight failed. Install deps: pip install -r requirements.txt\n`);
@@ -277,7 +306,8 @@ function main() {
         const { spawn: spawnProcess } = require("child_process");
         const child = spawnProcess(pythonPath, [orchestratorPath, "--tokens", promptTokens.toString(), "--background"], {
           detached: true,
-          stdio: "ignore"
+          stdio: "ignore",
+          windowsHide: true
         });
         child.on("error", (err) => {
           process.stderr.write(`\n[ERROR] GCS distillation failed: ${err.message}\n`);
@@ -291,7 +321,7 @@ function main() {
   }
 
   fs.writeFileSync(STATE_FILE, JSON.stringify({
-    last_notified_step: Math.max(lastStep, currentStep),
+    last_notified_step: currentStep,
     last_compact_bucket: lastCompactBucket,
     prompt_tokens: promptTokens,
     max_context: MAX_CONTEXT,
@@ -304,8 +334,9 @@ function main() {
 }
 
 function findProjectRoot(current) {
+  current = path.resolve(current);
   let depth = 0;
-  const rootDir = IS_WIN ? current.split(path.sep)[0] + path.sep : "/";
+  const rootDir = path.parse(current).root;
   while (depth < 10) {
     if (
       fs.existsSync(path.join(current, '.git')) ||
