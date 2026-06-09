@@ -73,6 +73,26 @@ function shouldResetSession(previousPromptTokens, currentPromptTokens) {
   return previous > 0 && current > 0 && current < previous;
 }
 
+function printToPane(text) {
+  try {
+    if (!process.env.TMUX && !process.env.TMUX_PANE) {
+      process.stderr.write(text);
+      return;
+    }
+    const tty = execSync("tmux display-message -p '#{pane_tty}'", {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (tty && fs.existsSync(tty)) {
+      fs.writeFileSync(tty, text);
+    } else {
+      process.stderr.write(text);
+    }
+  } catch (e) {
+    process.stderr.write(text);
+  }
+}
+
 function main() {
   try {
     const input = JSON.parse(fs.readFileSync(0, 'utf-8'));
@@ -174,7 +194,8 @@ function main() {
 
   const pendingCompactBuckets = getCompactBucketsToTrigger(lastCompactBucket, currentPercent);
   for (const bucket of pendingCompactBuckets) {
-    process.stderr.write(`\n🚨 [GCS] ${bucket}% threshold reached. Background compact triggered.\n`);
+    const msg = `\n\x1b[1;33m🚨 [GCS] ${bucket}% threshold reached. Background compaction triggered!\x1b[0m\n`;
+    printToPane(msg);
     try {
       writeStatus(`[GCS: ${percentUsed}% ⚡ YOLO]`);
     } catch(e) {}
