@@ -1,2 +1,0 @@
-description = "Compress the current conversation context (Session Compact)"
-prompt = "/compact"
