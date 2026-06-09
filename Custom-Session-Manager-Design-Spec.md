@@ -1,12 +1,13 @@
-# Gemini CLI Unified Memory System V6.4.0: Autonomous "Universal Hybrid"
+# Gemini CLI Unified Memory System V6.5.0: Autonomous "Universal Hybrid"
 
-#2026-06-05
-**Status**: 🛰️ Production Ready (V6.4.0 "Unified Snapshot Compaction")
+#2026-06-09
+**Status**: 🛰️ Production Ready (V6.5.0 "Jetski Statusline Integration")
 
 ## 📜 Change Log
 
 | Version | Date | Description | Author |
 | :--- | :--- | :--- | :--- |
+| **V6.5.0** | 2026-06-09 | 1. **Jetski Statusline Integration**: Extended `token_monitor.js` to natively parse Jetski statusline payload structure.<br>2. **Dynamic Context Window Detection**: Supports resolving `MAX_CONTEXT` dynamically from `context_window_size` in the payload.<br>3. **Session-Aware Tmux Status Fallback**: Local status path resolves session-specific status files with a global fallback. | Gemini CLI |
 | **V6.4.0** | 2026-06-05 | 1. **Unified Snapshot Compaction**: Removed original Strategic Project Snapshot module, retaining only Tactical Compaction, and changed command to `/snapshot`. <br>2. **Threshold Alignment**: Fixed token monitor to support all progressive pruning thresholds up to 70% (20%, 30%, 40%, 50%, 60%, 70%). | Gemini CLI |
 | **V6.3.0** | 2026-05-30 | 1. **Tiered Incremental Distillation**: Introduced `DISTILL_TIERS` to replace the single 20% threshold with progressive pruning at 20%, 30%, 40%, 50%, 60%, and 70%.<br>2. Implemented atomic watermark recording (`gcs_watermark.json`) in `gcs_orchestrator.py` to prevent repeated threshold triggers. | Gemini CLI |
 | **V6.2.0** | 2026-05-30 | 1. **Universal Hybrid**: Integrated explicit bootstrap architecture from Windows version, binding `python3 lib/bootstrap.py` in `gemini-extension.json`.<br>2. Added defensive virtualenv recovery engine (`sys.executable`) and non-blocking safe stdin reading in `bootstrap.py`.<br>3. Retained Module C (`/scan2db`) and real-time Tmux status updates. | Gemini CLI |

@@ -75,24 +75,41 @@ function shouldResetSession(previousPromptTokens, currentPromptTokens) {
 
 function main() {
   try {
-  const input = JSON.parse(fs.readFileSync(0, 'utf-8'));
-  const resp = input.llm_response;
-  if (!resp) { console.log(JSON.stringify({})); process.exit(0); }
+    const input = JSON.parse(fs.readFileSync(0, 'utf-8'));
+    let promptTokens = 0;
+    let outputTokens = 0;
+    let cachedTokens = 0;
+    let modelName = 'gemini-2.5-flash';
+    let maxContextOverride = null;
 
-  const usage = resp.usageMetadata || resp.usage;
-  if (!usage) { console.log(JSON.stringify({})); process.exit(0); }
+    if (input.context_window) {
+      // Format B: Jetski statusline payload
+      promptTokens = input.context_window.total_input_tokens || 0;
+      outputTokens = input.context_window.total_output_tokens || 0;
+      const currUsage = input.context_window.current_usage || {};
+      cachedTokens = currUsage.cache_read_input_tokens || 0;
+      modelName = (input.model?.id || 'gemini-2.5-flash').toLowerCase();
+      maxContextOverride = input.context_window.context_window_size || null;
+    } else if (input.llm_response) {
+      // Format A: Standard model hook payload
+      const resp = input.llm_response;
+      const usage = resp.usageMetadata || resp.usage || {};
+      promptTokens = usage.promptTokenCount || usage.input_tokens || 0;
+      outputTokens = usage.candidatesTokenCount || usage.output_tokens || 0;
+      cachedTokens = usage.cachedContentTokenCount || usage.cache_creation_input_tokens || usage.cache_read_input_tokens || 0;
+      modelName = (resp.model || input.llm_request?.model || 'gemini-2.5-flash').toLowerCase();
+    } else {
+      // Unsupported structure
+      console.log(JSON.stringify({}));
+      process.exit(0);
+    }
 
-  const promptTokens   = usage.promptTokenCount       || usage.input_tokens   || 0;
-  const outputTokens   = usage.candidatesTokenCount    || usage.output_tokens  || 0;
-  const cachedTokens   = usage.cachedContentTokenCount || usage.cache_creation_input_tokens || usage.cache_read_input_tokens || 0;
-  
-  if (promptTokens === 0) { console.log(JSON.stringify({})); process.exit(0); }
+    if (promptTokens === 0) { console.log(JSON.stringify({})); process.exit(0); }
 
-  const modelName = (resp.model || input.llm_request?.model || 'gemini-2.5-flash').toLowerCase();
-  const MAX_CONTEXT = resolveMaxContext(modelName);
+    const MAX_CONTEXT = maxContextOverride || resolveMaxContext(modelName);
 
-  const ratio = promptTokens / MAX_CONTEXT;
-  const percentUsed = (ratio * 100).toFixed(1);
+    const ratio = promptTokens / MAX_CONTEXT;
+    const percentUsed = (ratio * 100).toFixed(1);
 
   const projectRoot = findProjectRoot(process.cwd()) || (fs.existsSync(path.join(process.cwd(), 'src', 'gcs', 'gcs_orchestrator.py')) ? process.cwd() : null);
   const flashIcon = (projectRoot && fs.existsSync(path.join(projectRoot, '.gemini', 'gcs.pending'))) ? " ⚡" : "";

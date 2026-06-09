@@ -59,10 +59,15 @@ This system is designed to be installed as a Gemini CLI Global Extension.
 For deep technical details, see [GCS_GUARDIAN.md](./GCS_GUARDIAN.md) and the [Technical Whitepaper](./docs/gcs/GCS-Guardian-Ultimate-Whitepaper.md).
 
 ---
-*Created by Gemini 3.1 Pro. Version 6.4.0 (GCS Guardian v1.26.0) 2026-06-06.*
+*Created by Gemini 3.1 Pro. Version 6.5.0 (GCS Guardian v1.27.0) 2026-06-09.*
 #gcs #governance #architecture #gemini-cli
 
 ## 📈 Change Log
+
+### V6.5.0 (2026-06-09)
+- **Jetski Statusline Integration**: Extended `token_monitor.js` to natively parse Jetski's statusline payload structure and extract its token usage details.
+- **Dynamic Context Window Detection**: Supports overriding the context window size dynamically from the statusline payload (`context_window_size`).
+- **Session-Aware Tmux Status Fallback**: Local status path resolves session-specific tmux status files, falling back gracefully to the global status file.
 
 ### V6.4.0 (2026-06-05)
 - **Unified Snapshot Compaction**: Removed the original Strategic Project Snapshot module, retaining only the Tactical Compaction module, and changed the corresponding command from `/compact` to `/snapshot`.
