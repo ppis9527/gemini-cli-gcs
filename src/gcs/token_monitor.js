@@ -77,10 +77,16 @@ function getSessionRuntimePaths(sessionId) {
   };
 }
 
-function shouldResetSession(previousPromptTokens, currentPromptTokens, maxContext) {
+function shouldResetSession(previousPromptTokens, currentPromptTokens, maxContext, lastTimestamp) {
   const previous = Number(previousPromptTokens || 0);
   const current = Number(currentPromptTokens || 0);
   const limit = Number(maxContext) > 0 ? Number(maxContext) : 1048576;
+
+  // Reset if the last update was more than 5 minutes ago (idle timeout)
+  if (lastTimestamp && (Date.now() - new Date(lastTimestamp).getTime() > 5 * 60 * 1000)) {
+    return true;
+  }
+
   if (previous > 0 && current > 0) {
     // Reset if it drops below 10% of maximum context (meaning it transitioned from above 10% to below 10%)
     if (previous / limit >= 0.10 && current / limit < 0.10) {
@@ -207,11 +213,13 @@ function main() {
     try {
       fs.mkdirSync(sessionPaths.sessionRoot, { recursive: true });
       fs.writeFileSync(globalStatusPath, text);
+      // Also write to the global / legacy path so unified status readers (like tmux_remote_dashboard.sh) can work out-of-the-box
+      const legacyStatusPath = path.join(sessionPaths.runtimeRoot, 'tmux_status');
+      fs.writeFileSync(legacyStatusPath, text);
     } catch(e) {}
     if (gdriveStatusPath) {
-      try {
-        fs.writeFileSync(gdriveStatusPath, text);
-      } catch(e) {}
+      // Use asynchronous writeFile to prevent Cloud Drive disk I/O locking up the process
+      fs.writeFile(gdriveStatusPath, text, (err) => {});
     }
   }
 
@@ -227,7 +235,7 @@ function main() {
       const state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
       lastStep = state.last_notified_step || 0;
       lastCompactBucket = state.last_compact_bucket || 0;
-      if (shouldResetSession(state.prompt_tokens, promptTokens, MAX_CONTEXT)) {
+      if (shouldResetSession(state.prompt_tokens, promptTokens, MAX_CONTEXT, state.timestamp)) {
         lastStep = 0;
         lastCompactBucket = 0;
       }
@@ -304,14 +312,27 @@ function main() {
 
       if (preflightOk) {
         const { spawn: spawnProcess } = require("child_process");
+        
+        // Redirect child process stderr to gcs.log to capture background issues
+        const logFile = projectRoot ? path.join(projectRoot, '.gemini', 'gcs.log') : path.join(os.tmpdir(), 'gcs.log');
+        let logFd = null;
+        try {
+          fs.mkdirSync(path.dirname(logFile), { recursive: true });
+          logFd = fs.openSync(logFile, 'a');
+        } catch (e) {}
+
         const child = spawnProcess(pythonPath, [orchestratorPath, "--tokens", promptTokens.toString(), "--background"], {
           detached: true,
-          stdio: "ignore",
+          cwd: projectRoot || process.cwd(),
+          stdio: ["ignore", "ignore", logFd || "ignore"],
           windowsHide: true
         });
-        child.on("error", (err) => {
-          process.stderr.write(`\n[ERROR] GCS distillation failed: ${err.message}\n`);
-        });
+        
+        // Immediately close the parent's copy of logFd to prevent descriptor leaks.
+        // The child process retains its copy because of the stdio mapping.
+        if (logFd) {
+          try { fs.closeSync(logFd); } catch(e) {}
+        }
         child.unref();
       }
     } else {

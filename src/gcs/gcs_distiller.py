@@ -39,8 +39,8 @@ class GCSDistiller:
         tree = parser.parse(source_bytes_raw)
         root = tree.root_node
 
-        # Circuit Breaker (Iterative count)
-        node_count = self._count_nodes(root)
+        # Circuit Breaker (Limited Iterative count)
+        node_count = self._count_nodes_limited(root, AST_NODE_LIMIT)
         if node_count > AST_NODE_LIMIT:
             summary = f"# [GCS CIRCUIT BREAKER] {file_path}\n# Nodes: {node_count} > {AST_NODE_LIMIT}\n# Size: {len(source_code)} bytes\n"
             return (summary, []) if skip_alignment else (self._apply_hysteresis(summary), [])
@@ -48,7 +48,7 @@ class GCSDistiller:
         edits = []
         source_map = []
         file_uri = f"file://{os.path.abspath(file_path)}"
-        self._find_blocks_to_skeletonize(root, edits, ext, file_uri, source_code, source_map)
+        self._find_blocks_to_skeletonize(root, edits, ext, file_uri, source_bytes_raw, source_map)
         
         source_bytes = bytearray(source_bytes_raw)
         for start_byte, end_byte, replacement in sorted(edits, key=lambda x: x[0], reverse=True):
@@ -96,12 +96,14 @@ class GCSDistiller:
             padding = " " * padding_needed
         return text + padding
 
-    def _count_nodes(self, node):
+    def _count_nodes_limited(self, node, limit):
         count = 0
         stack = [node]
         while stack:
             curr = stack.pop()
             count += 1
+            if count > limit:
+                return count
             for i in range(curr.child_count):
                 stack.append(curr.child(i))
         return count
@@ -114,10 +116,10 @@ class GCSDistiller:
         if length == 0: return 0
         return -sum((f/length) * log2(f/length) for f in freq.values())
 
-    def _scrub_secrets(self, node, edits, source_code):
+    def _scrub_secrets(self, node, edits, source_bytes):
         if node.type in ("string", "template_string", "string_literal"):
             try:
-                text = source_code.encode("utf-8")[node.start_byte:node.end_byte].decode("utf-8")
+                text = source_bytes[node.start_byte:node.end_byte].decode("utf-8")
             except Exception: return
             for pattern in SECRET_PATTERNS:
                 if re.search(pattern, text):
@@ -125,11 +127,12 @@ class GCSDistiller:
                     return
             parent = node.parent
             if parent and parent.type in ("assignment", "variable_declarator", "pair"):
-                context_text = ""
+                context_text_parts = []
                 for child in parent.children:
-                    if child.type in ("identifier", "property_identifier", "variable_name"):
-                        try: context_text += source_code.encode("utf-8")[child.start_byte:child.end_byte].decode("utf-8")
+                    if child.type in ("identifier", "property_identifier", "variable_name", "string", "string_literal"):
+                        try: context_text_parts.append(source_bytes[child.start_byte:child.end_byte].decode("utf-8"))
                         except Exception: pass
+                context_text = "".join(context_text_parts)
                 for pattern in SECRET_PATTERNS:
                     if re.search(pattern, context_text):
                         edits.append((node.start_byte, node.end_byte, '"[REDACTED]"'))
@@ -138,14 +141,14 @@ class GCSDistiller:
             if len(inner_text) > 32 and self._shannon_entropy(inner_text) > 4.5:
                 edits.append((node.start_byte, node.end_byte, '"[REDACTED_HIGH_ENTROPY]"'))
 
-    def _find_blocks_to_skeletonize(self, node, edits, ext, file_uri, source_code, source_map):
-        self._scrub_secrets(node, edits, source_code)
+    def _find_blocks_to_skeletonize(self, node, edits, ext, file_uri, source_bytes, source_map):
+        self._scrub_secrets(node, edits, source_bytes)
         func_types = ("function_definition", "function_declaration", "method_definition", "arrow_function", "generator_function_declaration")
         if node.type in func_types:
             symbol_name = "anonymous"
             for child in node.children:
                 if child.type in ("identifier", "property_identifier"):
-                    try: symbol_name = source_code.encode("utf-8")[child.start_byte:child.end_byte].decode("utf-8")
+                    try: symbol_name = source_bytes[child.start_byte:child.end_byte].decode("utf-8")
                     except Exception: pass
                     break
             semantic_hint = ""; is_hot = False
@@ -164,11 +167,14 @@ class GCSDistiller:
                 source_map.append({
                     "symbol": symbol_name, "original_start": body_node.start_byte,
                     "original_end": body_node.end_byte, "type": node.type,
-                    "file_size_at_distill": len(source_code.encode("utf-8"))
+                    "file_size_at_distill": len(source_bytes)
                 })
                 if is_hot:
                     try:
-                        body_text = source_code.encode("utf-8")[body_node.start_byte:body_node.end_byte].decode("utf-8")
+                        body_text = source_bytes[body_node.start_byte:body_node.end_byte].decode("utf-8")
+                        # Perform secondary secret scanning replacement on preserved code block
+                        for pattern in SECRET_PATTERNS:
+                            body_text = re.sub(pattern, '"[REDACTED]"', body_text)
                         body_lines = body_text.splitlines()
                         preserved_count = min(len(body_lines), HOT_SYMBOL_PRESERVED_LINES)
                         preserved_body = "\n".join(body_lines[:preserved_count]) + "\n        ... (semantic truncation)"
@@ -177,7 +183,7 @@ class GCSDistiller:
                 else: replacement = f" pass{semantic_hint}" if ext == ".py" else f" ...{semantic_hint}"
                 edits.append((body_node.start_byte, body_node.end_byte, replacement))
                 return
-        for child in node.children: self._find_blocks_to_skeletonize(child, edits, ext, file_uri, source_code, source_map)
+        for child in node.children: self._find_blocks_to_skeletonize(child, edits, ext, file_uri, source_bytes, source_map)
 
     def stop(self):
         if self.lsp_bridge: self.lsp_bridge.stop(); self.lsp_bridge = None

@@ -24,11 +24,21 @@ if platform.system() != "Windows":
 else:
     import msvcrt
     def acquire_lock(f):
+        # Ensure file is at least 1 byte to prevent msvcrt.locking Bad File Descriptor exception on empty files
         f.seek(0)
-        msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+        if f.read(1) == b"":
+            f.write(b"\x00")
+            f.flush()
+        f.seek(0)
+        # Lock a large block instead of just 1 byte to prevent concurrency leakage
+        msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 0x7fffffff)
     def release_lock(f):
-        f.seek(0)
-        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+        try:
+            f.seek(0)
+            msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 0x7fffffff)
+        except OSError:
+            pass  # Prevent crash if releasing a non-held lock
+
 
 from gcs.gcs_distiller import GCSDistiller
 from gcs.config import get_paths, THRESHOLD_TOKENS, SMALL_FILE_THRESHOLD, __version__
@@ -47,7 +57,7 @@ class GCSOrchestrator:
     def _log(self, message):
         try:
             if os.path.exists(self.log_path) and os.path.getsize(self.log_path) > 1024 * 1024:
-                os.rename(self.log_path, self.log_path + ".old")
+                os.replace(self.log_path, self.log_path + ".old")
         except Exception:
             pass
         with open(self.log_path, "a") as f:
@@ -97,7 +107,7 @@ class GCSOrchestrator:
         with open(tmp_checkpoint, "wb") as f:
             json_str = json.dumps(checkpoint, indent=2)
             f.write(base64.b64encode(zlib.compress(json_str.encode("utf-8"))))
-        os.rename(tmp_checkpoint, self.checkpoint_path)
+        os.replace(tmp_checkpoint, self.checkpoint_path)
 
     def run_distillation(self, active_files):
         index_lock = os.path.join(self.root_path, ".git", "index.lock")
@@ -108,7 +118,10 @@ class GCSOrchestrator:
         lock_f = None
         try:
             try:
-                lock_f = open(self.lock_path, "a")
+                if not os.path.exists(self.lock_path):
+                    with open(self.lock_path, "w") as _:
+                        pass
+                lock_f = open(self.lock_path, "r+" if platform.system() == "Windows" else "a")
                 acquire_lock(lock_f)
             except (IOError, OSError):
                 self._log("Distillation in progress, skipping.")
@@ -127,6 +140,12 @@ class GCSOrchestrator:
                 rel_f_path = os.path.relpath(abs_f_path, self.root_path)
                 
                 if os.path.exists(abs_f_path):
+                    # Ensure physical path does not escape project root directory
+                    real_root = os.path.realpath(self.root_path)
+                    real_file = os.path.realpath(abs_f_path)
+                    if not real_file.startswith(real_root + os.sep) and real_file != real_root:
+                        self._log(f"Security block: file {abs_f_path} is outside project root.")
+                        continue
                     with open(abs_f_path, "r", encoding="utf-8", errors="replace") as f:
                         content = f.read()
                     skele_content, s_map = distiller.skeletonize(abs_f_path, content, skip_alignment=True)

@@ -60,6 +60,8 @@ class LSPBridge:
             except Exception: break
 
     def query_definition(self, file_uri: str, line: int, character: int) -> Tuple[Optional[dict], str, int]:
+        if not self.is_running or not self.process:
+            return None, "MISS", 0
         cache_key = f"{file_uri}:{line}:{character}"
         with self.lock:
             if cache_key in self.l1_cache:
