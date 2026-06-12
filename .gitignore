@@ -24,3 +24,8 @@ docs/
 tests/
 archive/
 
+# Antigravity CLI workspace state
+.antigravitycli/
+.antigravitycli
+
+
